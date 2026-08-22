@@ -35,6 +35,12 @@ import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Dashboard from '@/components/dashboard';
 import UserPanel from '@/components/user-panel';
+import ContactPage from '@/components/pages/ContactPage';
+import HowItWorksPage from '@/components/pages/HowItWorksPage';
+import PricingPage from '@/components/pages/PricingPage';
+import ConceptPage from '@/components/pages/ConceptPage';
+import AboutPage from '@/components/pages/AboutPage';
+import PrivacyPage from '@/components/pages/PrivacyPage';
 
 /* ═══════════════════════════════════════════
    Types & Constants
@@ -48,9 +54,20 @@ interface TimeSlot {
   price: number;
 }
 
+type PageView = 'landing' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy';
+
 const NAV_LINKS = [
   { label: 'Terrain', href: '#terrains' },
+  { label: 'Comment ça marche', view: 'how-it-works' as PageView },
   { label: 'Tarifs', href: '#pricing' },
+  { label: 'Concept', view: 'concept' as PageView },
+];
+
+const FOOTER_LINKS = [
+  { label: 'Contact', view: 'contact' as PageView },
+  { label: 'Confidentialité', view: 'privacy' as PageView },
+  { label: 'Mentions légales', view: 'about' as PageView },
+  { label: 'À propos', view: 'about' as PageView },
 ];
 
 const STATS = [
@@ -398,7 +415,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
    ═══════════════════════════════════════════ */
 
 export default function HomePage() {
-  const [view, setView] = useState<'landing' | 'dashboard' | 'user'>('landing');
+  const [view, setView] = useState<PageView>('landing');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -408,8 +425,9 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const handleToUserPanel = useCallback(() => {
-    setView('user');
+  const navigateTo = useCallback((v: PageView) => {
+    setView(v);
+    setMobileMenuOpen(false);
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -428,6 +446,30 @@ export default function HomePage() {
 
   if (view === 'user') {
     return <UserPanel onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'contact') {
+    return <ContactPage onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'how-it-works') {
+    return <HowItWorksPage onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'pricing') {
+    return <PricingPage onBack={handleBackToLanding} onBook={() => { setView('landing'); setTimeout(() => setBookingOpen(true), 100); }} />;
+  }
+
+  if (view === 'concept') {
+    return <ConceptPage onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'about') {
+    return <AboutPage onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'privacy') {
+    return <PrivacyPage onBack={handleBackToLanding} />;
   }
 
   return (
@@ -449,20 +491,42 @@ export default function HomePage() {
 
           <div className="hidden md:flex items-center gap-5">
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {link.label}
-              </a>
+              'view' in link && link.view ? (
+                <button
+                  key={link.label}
+                  onClick={() => navigateTo(link.view!)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </button>
+              ) : (
+                <a key={link.label} href={(link as { href: string }).href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {link.label}
+                </a>
+              )
             ))}
             <div className="w-px h-4 bg-border" />
             <button
-              onClick={handleToUserPanel}
+              onClick={() => navigateTo('about')}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              À propos
+            </button>
+            <button
+              onClick={() => navigateTo('contact')}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Contact
+            </button>
+            <button
+              onClick={() => navigateTo('user')}
               className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <User className="w-3.5 h-3.5" />
               Mon espace
             </button>
             <button
-              onClick={() => setView('dashboard')}
+              onClick={() => navigateTo('dashboard')}
               className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -489,18 +553,40 @@ export default function HomePage() {
             >
               <div className="px-4 py-4 space-y-3">
                 {NAV_LINKS.map((link) => (
-                  <a key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">
-                    {link.label}
-                  </a>
+                  'view' in link && link.view ? (
+                    <button
+                      key={link.label}
+                      onClick={() => navigateTo(link.view!)}
+                      className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <a key={link.label} href={(link as { href: string }).href} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">
+                      {link.label}
+                    </a>
+                  )
                 ))}
                 <button
-                  onClick={() => { setMobileMenuOpen(false); handleToUserPanel(); }}
+                  onClick={() => navigateTo('about')}
+                  className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  À propos
+                </button>
+                <button
+                  onClick={() => navigateTo('contact')}
+                  className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Contact
+                </button>
+                <button
+                  onClick={() => navigateTo('user')}
                   className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
                 >
                   <User className="w-3.5 h-3.5" /> Mon espace
                 </button>
                 <button
-                  onClick={() => { setMobileMenuOpen(false); setView('dashboard'); }}
+                  onClick={() => navigateTo('dashboard')}
                   className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
@@ -590,6 +676,9 @@ export default function HomePage() {
             <div className="text-center mb-14">
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Simple & rapide</p>
               <h2 className="text-2xl sm:text-3xl font-bold">Comment ça marche</h2>
+              <button onClick={() => navigateTo('how-it-works')} className="mt-3 text-sm text-primary hover:underline inline-flex items-center gap-1">
+                En savoir plus <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {STEPS.map((s, i) => (
@@ -665,6 +754,9 @@ export default function HomePage() {
             <div className="text-center mb-14">
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Tarifs transparents</p>
               <h2 className="text-2xl sm:text-3xl font-bold">Un prix, pas de surprise</h2>
+              <button onClick={() => navigateTo('pricing')} className="mt-3 text-sm text-primary hover:underline inline-flex items-center gap-1">
+                Voir tous les tarifs <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <motion.div
@@ -730,8 +822,11 @@ export default function HomePage() {
             © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Dakar
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Mentions légales</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            {FOOTER_LINKS.map((link) => (
+              <button key={link.label} onClick={() => navigateTo(link.view)} className="hover:text-foreground transition-colors">
+                {link.label}
+              </button>
+            ))}
           </div>
         </div>
       </footer>
