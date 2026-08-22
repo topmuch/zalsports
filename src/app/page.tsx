@@ -28,9 +28,11 @@ import {
   ArrowRight,
   Menu,
   X,
+  LayoutDashboard,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Dashboard from '@/components/dashboard';
 
 /* ───────────── Types ───────────── */
 interface TimeSlot {
@@ -488,9 +490,16 @@ function BookingDialog({
 
 /* ───────────── Main Page ───────────── */
 export default function HomePage() {
+  const [view, setView] = useState<'landing' | 'dashboard'>('landing');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // Redirect to landing when switching back
+  const handleBackToLanding = useCallback(() => {
+    setView('landing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -500,6 +509,11 @@ export default function HomePage() {
 
   const statsRef = useRef<HTMLDivElement>(null);
   const statsInView = useInView(statsRef, { once: true });
+
+  // Show dashboard
+  if (view === 'dashboard') {
+    return <Dashboard onBack={handleBackToLanding} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -528,7 +542,7 @@ export default function HomePage() {
           </a>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -538,6 +552,14 @@ export default function HomePage() {
                 {link.label}
               </a>
             ))}
+            <div className="w-px h-4 bg-border" />
+            <button
+              onClick={() => setView('dashboard')}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Dashboard
+            </button>
             <Button
               size="sm"
               className="glow-green"
@@ -582,6 +604,16 @@ export default function HomePage() {
                     {link.label}
                   </a>
                 ))}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setView('dashboard');
+                  }}
+                  className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </button>
                 <Button
                   className="w-full glow-green"
                   onClick={() => {
