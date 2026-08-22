@@ -1,26 +1,36 @@
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Create ZalFoot - a football pitch booking website similar to foot7plus.com
+Agent: Main
+Task: Clean rewrite of ZalFoot homepage and dashboard
 
 Work Log:
-- Analyzed foot7plus.com structure using agent-browser and web-reader
-- Generated AI images: hero background (stadium at night), logo (ZalFoot branding), terrain photo (aerial pitch view)
-- Designed dark sports theme with green accents using custom CSS variables
-- Built complete landing page with: Navbar, Hero section, Stats counters, 3-step process, Venue details, Pricing cards, CTA section, Footer
-- Implemented booking dialog with calendar, time slot selection, customer info form, and confirmation screen
-- Created REST API (GET/POST /api/bookings) with in-memory storage for slot management
-- Fixed Prisma/Turbopack compatibility issue by switching to in-memory db adapter
-- Fixed Bun/Next.js process stability issue by switching dev script to npx/node
-- Verified all sections render correctly via agent-browser snapshots
-- Verified API booking flow: slots retrieval, booking creation, duplicate prevention, date validation
-- Verified visual design via VLM screenshot analysis
+- Read all existing files (page.tsx, dashboard.tsx, db.ts, API routes, globals.css)
+- Rewrote /src/app/page.tsx — cleaner landing page (~340 lines, down from ~980 lines)
+  - Removed emoji clutter from step cards (now uses icon + number only)
+  - Cleaner hero section with shorter copy
+  - Better section spacing (py-20/py-28 instead of py-24/py-32)
+  - Narrower max-width (max-w-3xl hero, max-w-5xl sections, max-w-6xl nav/footer)
+  - Simplified venue detail cards using a mapped array instead of 4 separate blocks
+  - Location badge overlaid on terrain image
+  - Cleaner footer text
+  - Added `sizes` prop to terrain image
+  - Fixed unused imports (TrendingUp removed)
+- Rewrote /src/components/dashboard.tsx — cleaner admin dashboard (~260 lines, down from ~524)
+  - Removed ResponsiveContainer (unused import from recharts)
+  - Cleaner KPI cards without trend indicators (cleaner look)
+  - Added relative date display (Aujourd'hui, Demain) in table
+  - Cleaner 2x2 mobile KPI grid (grid-cols-2 lg:grid-cols-4)
+  - Removed PlayCircle and unused imports
+  - Simpler card headers (text-sm instead of text-base)
+  - Better table max-height (400px)
+  - Cleaned up comments and code organization
+- Verified all endpoints: GET /api/dashboard (200), GET /api/bookings?date=... (200), POST /api/bookings (400 - past date validation working)
+- Lint passes with no errors
+- Agent browser verification: landing page renders all sections, dashboard shows KPIs, charts, and booking table
+- Booking dialog opens with calendar and disabled past dates
 
 Stage Summary:
-- ZalFoot is a fully functional football pitch booking site at /
-- Dark sports theme with green accents, matching foot7plus.com style
-- All 6 sections: Hero, Stats, Steps, Venue, Pricing, CTA + Footer
-- Booking dialog with calendar, real-time slot availability, customer form
-- REST API for bookings with availability checking
-- Images: hero-bg.png, logo.png, terrain.png in /public
-
+- Both pages completely rewritten with cleaner, clearer design
+- All functionality preserved (booking dialog, dashboard charts, table actions)
+- No new dependencies added
+- Lint clean, no runtime errors
