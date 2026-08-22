@@ -21,12 +21,12 @@ const CONTACT_INFO = [
   {
     icon: MapPin,
     title: 'Adresse',
-    lines: ['ZalFoot Arena', 'Dakar, Sénégal'],
+    lines: ['ZalFoot Arena', 'Croisement Kaolack - Mbour, Sénégal'],
   },
   {
     icon: Phone,
     title: 'Téléphone',
-    lines: ['+221 78 123 45 67', '+221 76 987 65 43'],
+    lines: ['78 278 49 49'],
   },
   {
     icon: Mail,
@@ -41,7 +41,7 @@ const CONTACT_INFO = [
 ];
 
 const SOCIALS = [
-  { icon: MessageCircle, label: 'WhatsApp', handle: '+221 78 123 45 67' },
+  { icon: MessageCircle, label: 'WhatsApp', handle: '78 278 49 49' },
   { icon: Instagram, label: 'Instagram', handle: '@zalfoot.sn' },
 ];
 
@@ -114,7 +114,7 @@ export default function ContactPage({ onBack }: { onBack: () => void }) {
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-secondary border border-border flex items-center justify-center">
                 <div className="text-center space-y-2">
                   <MapPin className="w-8 h-8 text-primary mx-auto" />
-                  <p className="text-sm font-medium">Dakar, Sénégal</p>
+                  <p className="text-sm font-medium">Croisement Kaolack - Mbour, Sénégal</p>
                   <p className="text-xs text-muted-foreground">Coordonnées GPS</p>
                 </div>
               </div>

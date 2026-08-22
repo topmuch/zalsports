@@ -99,7 +99,7 @@ const STEPS = [
 
 const VENUE = {
   name: 'ZalFoot Arena',
-  location: 'Dakar, Sénégal',
+  location: 'Croisement Kaolack - Mbour, Sénégal',
   description:
     'Terrain synthétique dernière génération avec éclairage LED, vestiaires modernes et buvette.',
   pricePerHour: '25 000 FCFA',
@@ -610,7 +610,7 @@ export default function HomePage() {
           <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center pt-20">
             <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm border border-primary/20 bg-primary/10">
               <MapPin className="w-3.5 h-3.5 mr-1.5" />
-              DAKAR · SÉNÉGAL
+              CROISEMENT KAOLACK - MBOUR · SÉNÉGAL
             </Badge>
             <motion.h1
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight"
@@ -819,7 +819,7 @@ export default function HomePage() {
             <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Dakar
+            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Sénégal
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             {FOOTER_LINKS.map((link) => (

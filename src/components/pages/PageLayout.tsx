@@ -75,7 +75,7 @@ export default function PageLayout({
             <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Dakar
+            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Sénégal
           </p>
         </div>
       </footer>

@@ -66,7 +66,7 @@ Vous pouvez à tout moment demander à ne plus recevoir de communications en nou
     title: '5. Suppression des données',
     content: `Vous avez le droit de demander la suppression de vos données à tout moment. Pour cela :
 
-• Contactez-nous par téléphone au **+221 78 123 45 67**
+• Contactez-nous par téléphone au **78 278 49 49**
 • Ou par email à **contact@zalfoot.sn**
 
 Les données de réservation sont automatiquement supprimées après **12 mois** d'inactivité sur votre numéro.`,

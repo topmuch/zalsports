@@ -166,7 +166,7 @@ function PhoneLogin({ onLogin }: { onLogin: (phone: string) => void }) {
     e.preventDefault();
     setError('');
     if (!/^\+?221\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/.test(phone.trim())) {
-      setError('Format invalide. Ex: +221 77 123 45 67');
+      setError('Format invalide. Ex: 78 278 49 49');
       return;
     }
     setLoading(true);
@@ -206,7 +206,7 @@ function PhoneLogin({ onLogin }: { onLogin: (phone: string) => void }) {
             <Label htmlFor="login-phone" className="sr-only">Téléphone</Label>
             <Input
               id="login-phone"
-              placeholder="+221 77 123 45 67"
+              placeholder="78 278 49 49"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="text-center text-lg h-12"

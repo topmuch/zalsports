@@ -34,18 +34,18 @@ const TEAM = [
 ];
 
 const MILESTONES = [
-  { year: '2023', title: 'Lancement', desc: 'ZalFoot voit le jour à Dakar avec un seul terrain.' },
+  { year: '2023', title: 'Lancement', desc: 'ZalFoot voit le jour au Croisement Kaolack-Mbour avec un seul terrain.' },
   { year: '2023', title: '500 matchs', desc: '500 matchs joués en seulement 6 mois.' },
   { year: '2024', title: '1 000+ matchs', desc: 'Cap des 1 000 matchs franchi avec un taux de satisfaction de 98%.' },
   { year: '2024', title: 'Mobile Money', desc: 'Intégration de Wave et Orange Money pour les paiements.' },
-  { year: '2025', title: 'Expansion', desc: 'Objectif : 5 terrains à Dakar et environs.' },
+  { year: '2025', title: 'Expansion', desc: 'Objectif : 5 terrains au Sénégal.' },
 ];
 
 const MISSION_ITEMS = [
   {
     icon: Target,
     title: 'Notre mission',
-    desc: 'Démocratiser l\'accès au football de qualité à Dakar en rendant la réservation de terrain aussi simple qu\'un clic.',
+    desc: 'Démocratiser l\'accès au football de qualité au Sénégal en rendant la réservation de terrain aussi simple qu\'un clic.',
   },
   {
     icon: Heart,
@@ -63,7 +63,7 @@ export default function AboutPage({ onBack }: { onBack: () => void }) {
   return (
     <PageLayout
       title="À propos de nous"
-      subtitle="L'histoire de ZalFoot, une équipe passionnée qui veut changer la façon de jouer au football à Dakar."
+      subtitle="L'histoire de ZalFoot, une équipe passionnée qui veut changer la façon de jouer au football au Sénégal."
       onBack={onBack}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
@@ -97,13 +97,13 @@ export default function AboutPage({ onBack }: { onBack: () => void }) {
           <h2 className="text-2xl font-bold mb-4">De l\'idée à la réalité</h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed max-w-3xl">
             <p>
-              ZalFoot est né d\'une frustration simple : organiser un match de foot entre amis à Dakar ne devrait pas être aussi compliqué. Appels qui ne répondent pas, pas de visibilité sur les créneaux disponibles, et un système de réservation qui repose encore sur le bon vieux carnet papier.
+              ZalFoot est né d\'une frustration simple : organiser un match de foot entre amis au Sénégal ne devrait pas être aussi compliqué. Appels qui ne répondent pas, pas de visibilité sur les créneaux disponibles, et un système de réservation qui repose encore sur le bon vieux carnet papier.
             </p>
             <p>
               En 2023, notre fondateur Mamadou Diop a décidé de changer ça. Ancien joueur amateur, il connaissait parfaitement la galère. Fort de son expérience en tech, il a conçu une plateforme ultra-simple : pas de compte à créer, pas d\'application à télécharger, juste un calendrier en ligne et un numéro de téléphone.
             </p>
             <p>
-              Aujourd\'hui, ZalFoot gère un terrain synthétique dernier cri au cœur de Dakar, avec plus de 1 250 matchs joués et un taux de satisfaction de 98%. Et ce n\'est que le début.
+              Aujourd\'hui, ZalFoot gère un terrain synthétique dernier cri au Croisement Kaolack-Mbour, avec plus de 1 250 matchs joués et un taux de satisfaction de 98%. Et ce n\'est que le début.
             </p>
           </div>
         </div>

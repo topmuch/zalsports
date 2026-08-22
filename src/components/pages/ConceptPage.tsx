@@ -67,7 +67,7 @@ const VALUES = [
   {
     icon: Users,
     title: 'Communauté',
-    desc: 'ZalFoot connecte les joueurs de Dakar. Créez votre équipe, organisez vos matchs, vivez votre passion.',
+    desc: 'ZalFoot connecte les joueurs de Kaolack-Mbour. Créez votre équipe, organisez vos matchs, vivez votre passion.',
   },
 ];
 
@@ -82,7 +82,7 @@ export default function ConceptPage({ onBack }: { onBack: () => void }) {
   return (
     <PageLayout
       title="Le concept ZalFoot"
-      subtitle="Révolutionner la réservation de terrains de football à Dakar. Simple, rapide, moderne."
+      subtitle="Révolutionner la réservation de terrains de football au Sénégal. Simple, rapide, moderne."
       onBack={onBack}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
@@ -98,7 +98,7 @@ export default function ConceptPage({ onBack }: { onBack: () => void }) {
               Le football mérite mieux qu&rsquo;un coup de fil.
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              À Dakar, réserver un terrain de football est souvent un calvaire : appels qui ne répondent pas, pas de visibilité sur les disponibilités, aucun moyen de paiement moderne. ZalFoot change ça.
+              Au Sénégal, réserver un terrain de football est souvent un calvaire : appels qui ne répondent pas, pas de visibilité sur les disponibilités, aucun moyen de paiement moderne. ZalFoot change ça.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               Notre plateforme permet à n\'importe quel joueur de réserver un terrain de qualité en quelques secondes, depuis son téléphone, avec une confirmation immédiate. C\'est aussi simple que commander un repas.
@@ -109,7 +109,7 @@ export default function ConceptPage({ onBack }: { onBack: () => void }) {
             <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
             <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-background/70 backdrop-blur-sm rounded-lg px-3 py-1.5">
               <MapPin className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium">Dakar, Sénégal</span>
+              <span className="text-xs font-medium">Croisement Kaolack - Mbour, Sénégal</span>
             </div>
           </div>
         </div>

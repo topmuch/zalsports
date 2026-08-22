@@ -81,7 +81,7 @@ const FAQ = [
 
 const FEATURES = [
   { icon: Clock, label: 'Ouvert 7j/7' },
-  { icon: MapPin, label: 'Dakar, Sénégal' },
+  { icon: MapPin, label: 'Croisement Kaolack - Mbour, Sénégal' },
   { icon: Users, label: 'Jusqu\'à 14 joueurs' },
   { icon: Zap, label: 'Réservation en 30s' },
   { icon: CheckCircle2, label: 'Paiement mobile' },
