@@ -6,12 +6,23 @@ export interface Booking {
   timeSlot: string;
   customerName: string;
   customerPhone: string;
-  status: 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  paymentStatus: 'unpaid' | 'partial' | 'paid';
+  amount: number;
+  depositPaid: number;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface UserProfile {
+  phone: string;
+  name: string;
+  email: string;
+  notifications: boolean;
+}
+
 const bookings: Map<string, Booking> = new Map();
+const userProfiles: Map<string, UserProfile> = new Map();
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
@@ -36,39 +47,40 @@ function seedIfEmpty() {
     '+221 77 666 77 88', '+221 78 777 88 99', '+221 76 888 99 00',
     '+221 77 999 00 11', '+221 78 000 11 22',
   ];
-  const slots = [];
+  const slots: string[] = [];
   for (let h = 8; h <= 23; h++) slots.push(`${h.toString().padStart(2, '0')}:00`);
   const statuses: Booking['status'][] = ['confirmed', 'completed', 'cancelled'];
+  const paymentStatuses: Booking['paymentStatus'][] = ['unpaid', 'partial', 'paid'];
 
-  // Generate bookings for the last 14 days
   const now = new Date();
   let ni = 0;
+
+  // Generate bookings for the last 14 days
   for (let d = 13; d >= 0; d--) {
     const date = new Date(now);
     date.setDate(date.getDate() - d);
     const dateStr = date.toISOString().split('T')[0];
-    // 3-7 bookings per day
     const count = 3 + Math.floor(Math.random() * 5);
     const daySlots = [...slots].sort(() => Math.random() - 0.5).slice(0, count);
     for (const slot of daySlots) {
       const status = d === 0 ? 'confirmed' : statuses[Math.floor(Math.random() * 3)];
+      const payStatus = status === 'cancelled' ? 'unpaid' : paymentStatuses[Math.floor(Math.random() * 3)];
       const created = new Date(date);
       created.setHours(parseInt(slot), 0, 0, 0);
       const id = generateId() + ni;
       bookings.set(id, {
-        id,
-        date: dateStr,
-        timeSlot: slot,
+        id, date: dateStr, timeSlot: slot,
         customerName: names[ni % names.length],
         customerPhone: phones[ni % phones.length],
-        status,
-        createdAt: created.toISOString(),
-        updatedAt: created.toISOString(),
+        status, paymentStatus: payStatus,
+        amount: 25000, depositPaid: payStatus === 'paid' ? 25000 : payStatus === 'partial' ? 5000 : 0,
+        createdAt: created.toISOString(), updatedAt: created.toISOString(),
       });
       ni++;
     }
   }
-  // Also add a few future bookings
+
+  // Future bookings
   for (let d = 1; d <= 7; d++) {
     const date = new Date(now);
     date.setDate(date.getDate() + d);
@@ -76,113 +88,128 @@ function seedIfEmpty() {
     const count = 2 + Math.floor(Math.random() * 4);
     const daySlots = [...slots].sort(() => Math.random() - 0.5).slice(0, count);
     for (const slot of daySlots) {
+      const payStatus = paymentStatuses[Math.floor(Math.random() * 3)];
       const created = new Date();
       const id = generateId() + ni;
       bookings.set(id, {
-        id,
-        date: dateStr,
-        timeSlot: slot,
+        id, date: dateStr, timeSlot: slot,
         customerName: names[ni % names.length],
         customerPhone: phones[ni % phones.length],
-        status: 'confirmed',
-        createdAt: created.toISOString(),
-        updatedAt: created.toISOString(),
+        status: 'confirmed', paymentStatus: payStatus,
+        amount: 25000, depositPaid: payStatus === 'paid' ? 25000 : payStatus === 'partial' ? 5000 : 0,
+        createdAt: created.toISOString(), updatedAt: created.toISOString(),
       });
       ni++;
     }
   }
+
+  // Seed a demo user profile for phone +221 77 123 45 67
+  userProfiles.set('+221 77 123 45 67', {
+    phone: '+221 77 123 45 67',
+    name: 'Moussa Diallo',
+    email: 'moussa.diallo@email.com',
+    notifications: true,
+  });
 }
 
-// Auto-seed on module load
 seedIfEmpty();
 
 export const db = {
   booking: {
     findFirst: async (where: { date: string; timeSlot: string; status: string }) => {
       for (const b of bookings.values()) {
-        if (b.date === where.date && b.timeSlot === where.timeSlot && b.status === where.status) {
-          return b;
-        }
+        if (b.date === where.date && b.timeSlot === where.timeSlot && b.status === where.status) return b;
       }
       return null;
     },
-    findMany: async (args?: { where?: { date?: string; status?: string }; orderBy?: { createdAt?: string }; take?: number }) => {
+    findMany: async (args?: {
+      where?: { date?: string; status?: string; customerPhone?: string; paymentStatus?: string; dateGte?: string; dateLte?: string };
+      orderBy?: { createdAt?: string; date?: string };
+      take?: number;
+    }) => {
       let result = Array.from(bookings.values());
-      if (args?.where?.date) result = result.filter(b => b.date === args.where.date);
-      if (args?.where?.status) result = result.filter(b => b.status === args.where.status);
+      const w = args?.where;
+      if (w?.date) result = result.filter(b => b.date === w.date);
+      if (w?.customerPhone) result = result.filter(b => b.customerPhone === w.customerPhone);
+      if (w?.status) result = result.filter(b => b.status === w.status);
+      if (w?.paymentStatus) result = result.filter(b => b.paymentStatus === w.paymentStatus);
+      if (w?.dateGte) result = result.filter(b => b.date >= w.dateGte);
+      if (w?.dateLte) result = result.filter(b => b.date <= w.dateLte);
       if (args?.orderBy?.createdAt === 'desc') result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      if (args?.orderBy?.date === 'asc') result.sort((a, b) => a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot));
       if (args?.take) result = result.slice(0, args.take);
       return result;
     },
     findUnique: async (where: { id: string }) => {
       return bookings.get(where.id) || null;
     },
-    create: async (data: { date: string; timeSlot: string; customerName: string; customerPhone: string }) => {
+    create: async (data: { date: string; timeSlot: string; customerName: string; customerPhone: string; status?: Booking['status'] }) => {
       const id = generateId();
       const now = new Date().toISOString();
       const booking: Booking = {
-        id,
-        date: data.date,
-        timeSlot: data.timeSlot,
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        status: 'confirmed',
-        createdAt: now,
-        updatedAt: now,
+        id, date: data.date, timeSlot: data.timeSlot,
+        customerName: data.customerName, customerPhone: data.customerPhone,
+        status: data.status || 'pending', paymentStatus: 'unpaid',
+        amount: 25000, depositPaid: 0,
+        createdAt: now, updatedAt: now,
       };
       bookings.set(id, booking);
       return booking;
     },
-    update: async (where: { id: string }, data: { status?: string }) => {
+    update: async (where: { id: string }, data: { status?: string; paymentStatus?: string; depositPaid?: number }) => {
       const booking = bookings.get(where.id);
       if (!booking) return null;
       if (data.status) booking.status = data.status as Booking['status'];
+      if (data.paymentStatus) booking.paymentStatus = data.paymentStatus as Booking['paymentStatus'];
+      if (data.depositPaid !== undefined) booking.depositPaid = data.depositPaid;
       booking.updatedAt = new Date().toISOString();
       return booking;
     },
-    count: async (args?: { where?: { date?: string; status?: string } }) => {
+    count: async (args?: { where?: { date?: string; status?: string; customerPhone?: string } }) => {
       let result = Array.from(bookings.values());
       if (args?.where?.date) result = result.filter(b => b.date === args.where.date);
       if (args?.where?.status) result = result.filter(b => b.status === args.where.status);
+      if (args?.where?.customerPhone) result = result.filter(b => b.customerPhone === args.where.customerPhone);
       return result.length;
+    },
+    getCalendarMonth: async (year: number, month: number, phone?: string) => {
+      const all = Array.from(bookings.values());
+      const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+      let filtered = all.filter(b => b.date.startsWith(monthStr) && b.status !== 'cancelled');
+      if (phone) filtered = filtered.filter(b => b.customerPhone === phone);
+      // Group by date
+      const byDate: Record<string, Booking[]> = {};
+      for (const b of filtered) {
+        if (!byDate[b.date]) byDate[b.date] = [];
+        byDate[b.date].push(b);
+      }
+      return byDate;
     },
     getStats: async () => {
       const all = Array.from(bookings.values());
       const today = new Date().toISOString().split('T')[0];
       const todayBookings = all.filter(b => b.date === today);
       const confirmed = all.filter(b => b.status === 'confirmed' || b.status === 'completed');
-      const totalRevenue = confirmed.length * 25000;
-      const todayRevenue = todayBookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length * 25000;
+      const totalRevenue = confirmed.filter(b => b.paymentStatus === 'paid').length * 25000 +
+        confirmed.filter(b => b.paymentStatus === 'partial').length * 5000;
+      const todayRevenue = todayBookings.filter(b => (b.status === 'confirmed' || b.status === 'completed') && b.paymentStatus !== 'unpaid').length * 25000;
 
-      // Hourly distribution
       const hourlyDist: Record<string, number> = {};
-      for (let h = 8; h <= 23; h++) {
-        hourlyDist[`${h.toString().padStart(2, '0')}:00`] = 0;
-      }
-      for (const b of confirmed) {
-        hourlyDist[b.timeSlot] = (hourlyDist[b.timeSlot] || 0) + 1;
-      }
+      for (let h = 8; h <= 23; h++) hourlyDist[`${h.toString().padStart(2, '0')}:00`] = 0;
+      for (const b of confirmed) hourlyDist[b.timeSlot] = (hourlyDist[b.timeSlot] || 0) + 1;
 
-      // Daily distribution (last 7 days)
       const dailyDist: { date: string; count: number; revenue: number }[] = [];
       for (let d = 6; d >= 0; d--) {
-        const date = new Date();
-        date.setDate(date.getDate() - d);
+        const date = new Date(); date.setDate(date.getDate() - d);
         const dateStr = date.toISOString().split('T')[0];
         const dayBookings = confirmed.filter(b => b.date === dateStr);
-        dailyDist.push({
-          date: dateStr,
-          count: dayBookings.length,
-          revenue: dayBookings.length * 25000,
-        });
+        dailyDist.push({ date: dateStr, count: dayBookings.length, revenue: dayBookings.length * 25000 });
       }
 
-      // Occupancy rate today
-      const totalSlots = 16; // 08:00 to 23:00
+      const totalSlots = 16;
       const bookedToday = todayBookings.filter(b => b.status !== 'cancelled').length;
       const occupancyRate = totalSlots > 0 ? Math.round((bookedToday / totalSlots) * 100) : 0;
 
-      // Upcoming bookings (future confirmed)
       const upcoming = all
         .filter(b => b.date >= today && b.status === 'confirmed')
         .sort((a, b) => a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot))
@@ -191,17 +218,25 @@ export const db = {
       return {
         totalBookings: all.length,
         todayBookings: todayBookings.filter(b => b.status !== 'cancelled').length,
-        totalRevenue,
-        todayRevenue,
-        occupancyRate,
+        totalRevenue, todayRevenue, occupancyRate,
         confirmedCount: confirmed.length,
         cancelledCount: all.filter(b => b.status === 'cancelled').length,
         completedCount: all.filter(b => b.status === 'completed').length,
+        pendingCount: all.filter(b => b.status === 'pending').length,
         hourlyDistribution: hourlyDist,
         dailyDistribution: dailyDist,
         upcomingBookings: upcoming,
         recentBookings: [...all].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 15),
       };
+    },
+  },
+  user: {
+    find: async (phone: string) => {
+      return userProfiles.get(phone) || null;
+    },
+    upsert: async (data: { phone: string; name: string; email: string; notifications: boolean }) => {
+      userProfiles.set(data.phone, { ...data });
+      return userProfiles.get(data.phone)!;
     },
   },
 };

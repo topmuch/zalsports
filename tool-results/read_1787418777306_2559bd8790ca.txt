@@ -1,0 +1,719 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useRef, useCallback } from 'react';
+     4→import Image from 'next/image';
+     5→import { motion, useInView, AnimatePresence } from 'framer-motion';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import {
+     9→  Dialog,
+    10→  DialogContent,
+    11→  DialogHeader,
+    12→  DialogTitle,
+    13→  DialogDescription,
+    14→} from '@/components/ui/dialog';
+    15→import { Input } from '@/components/ui/input';
+    16→import { Label } from '@/components/ui/label';
+    17→import { Calendar } from '@/components/ui/calendar';
+    18→import { ScrollArea } from '@/components/ui/scroll-area';
+    19→import {
+    20→  MapPin,
+    21→  Clock,
+    22→  Users,
+    23→  Zap,
+    24→  ChevronDown,
+    25→  CalendarDays,
+    26→  ShieldCheck,
+    27→  ArrowRight,
+    28→  Menu,
+    29→  X,
+    30→  LayoutDashboard,
+    31→  CreditCard,
+    32→} from 'lucide-react';
+    33→import { format, addDays } from 'date-fns';
+    34→import { fr } from 'date-fns/locale';
+    35→import Dashboard from '@/components/dashboard';
+    36→
+    37→/* ═══════════════════════════════════════════
+    38→   Types & Constants
+    39→   ═══════════════════════════════════════════ */
+    40→
+    41→interface TimeSlot {
+    42→  id: string;
+    43→  time: string;
+    44→  label: string;
+    45→  available: boolean;
+    46→  price: number;
+    47→}
+    48→
+    49→const NAV_LINKS = [
+    50→  { label: 'Terrain', href: '#terrains' },
+    51→  { label: 'Tarifs', href: '#pricing' },
+    52→];
+    53→
+    54→const STATS = [
+    55→  { value: 1250, suffix: '+', label: 'Matchs joués' },
+    56→  { value: 98, suffix: '%', label: 'Satisfaction' },
+    57→  { value: 14, suffix: '', label: 'Joueurs max' },
+    58→];
+    59→
+    60→const STEPS = [
+    61→  {
+    62→    icon: CalendarDays,
+    63→    number: '01',
+    64→    title: 'Choisissez votre créneau',
+    65→    description: 'Consultez les disponibilités et sélectionnez votre date et horaire.',
+    66→  },
+    67→  {
+    68→    icon: ShieldCheck,
+    69→    number: '02',
+    70→    title: 'Réservez en 30 secondes',
+    71→    description: 'Entrez votre nom et numéro — aucun compte requis.',
+    72→  },
+    73→  {
+    74→    icon: CreditCard,
+    75→    number: '03',
+    76→    title: 'Payez l\'acompte',
+    77→    description: 'Acompte en ligne via Wave ou Orange Money. Le solde sur place.',
+    78→  },
+    79→];
+    80→
+    81→const VENUE = {
+    82→  name: 'ZalFoot Arena',
+    83→  location: 'Dakar, Sénégal',
+    84→  description:
+    85→    'Terrain synthétique dernière génération avec éclairage LED, vestiaires modernes et buvette.',
+    86→  pricePerHour: '25 000 FCFA',
+    87→  deposit: '5 000 FCFA',
+    88→  capacity: '14 joueurs',
+    89→  hours: '08:00 – 00:00',
+    90→};
+    91→
+    92→function generateTimeSlots(availableHours?: Set<string>): TimeSlot[] {
+    93→  const slots: TimeSlot[] = [];
+    94→  for (let h = 8; h <= 23; h++) {
+    95→    const timeStr = `${h.toString().padStart(2, '0')}:00`;
+    96→    const available = availableHours ? !availableHours.has(timeStr) : true;
+    97→    slots.push({
+    98→      id: `slot-${h}`,
+    99→      time: timeStr,
+   100→      label: `${timeStr} – ${(h + 1).toString().padStart(2, '0')}:00`,
+   101→      available,
+   102→      price: 25000,
+   103→    });
+   104→  }
+   105→  return slots;
+   106→}
+   107→
+   108→/* ═══════════════════════════════════════════
+   109→   Animated Counter
+   110→   ═══════════════════════════════════════════ */
+   111→
+   112→function AnimatedCounter({ value, suffix, inView }: { value: number; suffix: string; inView: boolean }) {
+   113→  const [count, setCount] = useState(0);
+   114→  useEffect(() => {
+   115→    if (!inView) return;
+   116→    let start = 0;
+   117→    const step = Math.max(1, Math.floor(value / 125));
+   118→    const timer = setInterval(() => {
+   119→      start += step;
+   120→      if (start >= value) {
+   121→        setCount(value);
+   122→        clearInterval(timer);
+   123→      } else {
+   124→        setCount(start);
+   125→      }
+   126→    }, 16);
+   127→    return () => clearInterval(timer);
+   128→  }, [inView, value]);
+   129→
+   130→  return (
+   131→    <span>
+   132→      {count.toLocaleString('fr-FR')}
+   133→      {suffix}
+   134→    </span>
+   135→  );
+   136→}
+   137→
+   138→/* ═══════════════════════════════════════════
+   139→   Section Wrapper
+   140→   ═══════════════════════════════════════════ */
+   141→
+   142→function Section({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
+   143→  const ref = useRef<HTMLDivElement>(null);
+   144→  const isInView = useInView(ref, { once: true, margin: '-60px' });
+   145→  return (
+   146→    <motion.section
+   147→      ref={ref}
+   148→      id={id}
+   149→      className={className}
+   150→      initial={{ opacity: 0, y: 30 }}
+   151→      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+   152→      transition={{ duration: 0.6, ease: 'easeOut' }}
+   153→    >
+   154→      {children}
+   155→    </motion.section>
+   156→  );
+   157→}
+   158→
+   159→/* ═══════════════════════════════════════════
+   160→   Booking Dialog
+   161→   ═══════════════════════════════════════════ */
+   162→
+   163→function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+   164→  const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
+   165→  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+   166→  const [slots, setSlots] = useState<TimeSlot[]>([]);
+   167→  const [step, setStep] = useState<'select' | 'info' | 'confirm'>('select');
+   168→  const [name, setName] = useState('');
+   169→  const [phone, setPhone] = useState('');
+   170→  const [isSubmitting, setIsSubmitting] = useState(false);
+   171→  const [loadingSlots, setLoadingSlots] = useState(false);
+   172→
+   173→  const fetchSlots = useCallback(async (date: Date) => {
+   174→    setLoadingSlots(true);
+   175→    try {
+   176→      const dateStr = format(date, 'yyyy-MM-dd');
+   177→      const res = await fetch(`/api/bookings?date=${dateStr}`);
+   178→      if (res.ok) {
+   179→        const data = await res.json();
+   180→        const bookedSet = new Set(
+   181→          data.available
+   182→            .filter((s: { time: string; available: boolean }) => !s.available)
+   183→            .map((s: { time: string; available: boolean }) => s.time)
+   184→        );
+   185→        setSlots(generateTimeSlots(bookedSet));
+   186→      } else {
+   187→        setSlots(generateTimeSlots());
+   188→      }
+   189→    } catch {
+   190→      setSlots(generateTimeSlots());
+   191→    } finally {
+   192→      setLoadingSlots(false);
+   193→    }
+   194→  }, []);
+   195→
+   196→  useEffect(() => {
+   197→    if (open) {
+   198→      const tomorrow = addDays(new Date(), 1);
+   199→      setSelectedDate(tomorrow);
+   200→      setSelectedSlot(null);
+   201→      setStep('select');
+   202→      setName('');
+   203→      setPhone('');
+   204→      fetchSlots(tomorrow);
+   205→    }
+   206→  }, [open, fetchSlots]);
+   207→
+   208→  useEffect(() => {
+   209→    if (open && selectedDate) {
+   210→      setSelectedSlot(null);
+   211→      fetchSlots(selectedDate);
+   212→    }
+   213→  }, [selectedDate, open, fetchSlots]);
+   214→
+   215→  const handleConfirm = useCallback(async () => {
+   216→    if (!selectedSlot || !selectedDate || !name || !phone) return;
+   217→    setIsSubmitting(true);
+   218→    try {
+   219→      const res = await fetch('/api/bookings', {
+   220→        method: 'POST',
+   221→        headers: { 'Content-Type': 'application/json' },
+   222→        body: JSON.stringify({
+   223→          date: format(selectedDate, 'yyyy-MM-dd'),
+   224→          timeSlot: selectedSlot.time,
+   225→          customerName: name,
+   226→          customerPhone: phone,
+   227→        }),
+   228→      });
+   229→      if (res.ok) setStep('confirm');
+   230→    } catch {
+   231→      // silent
+   232→    } finally {
+   233→      setIsSubmitting(false);
+   234→    }
+   235→  }, [selectedSlot, selectedDate, name, phone]);
+   236→
+   237→  return (
+   238→    <Dialog open={open} onOpenChange={onOpenChange}>
+   239→      <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-hidden flex flex-col p-0">
+   240→        {step === 'confirm' ? (
+   241→          <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 text-center">
+   242→            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+   243→              <Zap className="w-8 h-8 text-primary" />
+   244→            </div>
+   245→            <DialogHeader>
+   246→              <DialogTitle className="text-2xl">Réservation confirmée !</DialogTitle>
+   247→              <DialogDescription className="text-muted-foreground text-base mt-2">
+   248→                Votre créneau a été réservé avec succès. Vous recevrez un SMS de confirmation.
+   249→              </DialogDescription>
+   250→            </DialogHeader>
+   251→            <div className="bg-secondary rounded-xl p-4 mt-4 w-full max-w-sm space-y-2">
+   252→              <div className="flex justify-between text-sm">
+   253→                <span className="text-muted-foreground">Date</span>
+   254→                <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+   255→              </div>
+   256→              <div className="flex justify-between text-sm">
+   257→                <span className="text-muted-foreground">Créneau</span>
+   258→                <span className="font-medium">{selectedSlot?.label}</span>
+   259→              </div>
+   260→              <div className="flex justify-between text-sm">
+   261→                <span className="text-muted-foreground">Acompte</span>
+   262→                <span className="font-medium text-primary">5 000 FCFA</span>
+   263→              </div>
+   264→            </div>
+   265→            <Button className="mt-4 w-full max-w-sm" onClick={() => onOpenChange(false)}>Fermer</Button>
+   266→          </div>
+   267→        ) : (
+   268→          <>
+   269→            <DialogHeader className="p-6 pb-2">
+   270→              <DialogTitle className="text-xl font-bold">Réserver un créneau</DialogTitle>
+   271→              <DialogDescription>{step === 'select' ? 'Choisissez votre date et votre horaire' : 'Complétez vos informations'}</DialogDescription>
+   272→            </DialogHeader>
+   273→            <div className="flex-1 overflow-hidden">
+   274→              <ScrollArea className="h-full max-h-[60vh]">
+   275→                <div className="p-6 pt-2">
+   276→                  {step === 'select' && (
+   277→                    <div className="space-y-6">
+   278→                      <div>
+   279→                        <Label className="text-sm font-medium mb-3 block">Date</Label>
+   280→                        <div className="flex justify-center">
+   281→                          <Calendar
+   282→                            mode="single"
+   283→                            selected={selectedDate}
+   284→                            onSelect={setSelectedDate}
+   285→                            disabled={{ before: new Date() }}
+   286→                            className="rounded-xl border border-border"
+   287→                            classNames={{
+   288→                              day_selected: 'bg-primary text-primary-foreground rounded-md',
+   289→                              day_today: 'bg-accent text-accent-foreground rounded-md',
+   290→                            }}
+   291→                          />
+   292→                        </div>
+   293→                      </div>
+   294→                      {selectedDate && (
+   295→                        <div>
+   296→                          <Label className="text-sm font-medium mb-3 block">
+   297→                            Créneaux — {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
+   298→                          </Label>
+   299→                          {loadingSlots ? (
+   300→                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+   301→                              {Array.from({ length: 8 }).map((_, i) => (
+   302→                                <div key={i} className="h-12 rounded-lg bg-secondary/50 animate-pulse" />
+   303→                              ))}
+   304→                            </div>
+   305→                          ) : (
+   306→                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+   307→                              {slots.map((slot) => (
+   308→                                <button
+   309→                                  key={slot.id}
+   310→                                  disabled={!slot.available}
+   311→                                  onClick={() => setSelectedSlot(slot)}
+   312→                                  className={
+   313→                                    `relative p-3 rounded-lg border text-sm font-medium transition-all ${
+   314→                                      !slot.available
+   315→                                        ? 'border-border/50 bg-secondary/30 text-muted-foreground/50 cursor-not-allowed line-through'
+   316→                                        : selectedSlot?.id === slot.id
+   317→                                          ? 'border-primary bg-primary/15 text-primary glow-green'
+   318→                                          : 'border-border bg-secondary/50 hover:border-primary/50 hover:bg-secondary'
+   319→                                    }`
+   320→                                  }
+   321→                                >
+   322→                                  {slot.time}
+   323→                                  {!slot.available && (
+   324→                                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive/60" />
+   325→                                  )}
+   326→                                </button>
+   327→                              ))}
+   328→                            </div>
+   329→                          )}
+   330→                        </div>
+   331→                      )}
+   332→                      {selectedSlot && (
+   333→                        <Button className="w-full" size="lg" onClick={() => setStep('info')}>
+   334→                          Continuer <ArrowRight className="ml-2 w-4 h-4" />
+   335→                        </Button>
+   336→                      )}
+   337→                    </div>
+   338→                  )}
+   339→                  {step === 'info' && (
+   340→                    <div className="space-y-4">
+   341→                      <div className="bg-secondary rounded-xl p-4 space-y-2">
+   342→                        <div className="flex justify-between text-sm">
+   343→                          <span className="text-muted-foreground">Date</span>
+   344→                          <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+   345→                        </div>
+   346→                        <div className="flex justify-between text-sm">
+   347→                          <span className="text-muted-foreground">Créneau</span>
+   348→                          <span className="font-medium">{selectedSlot?.label}</span>
+   349→                        </div>
+   350→                        <div className="flex justify-between text-sm">
+   351→                          <span className="text-muted-foreground">Prix</span>
+   352→                          <span className="font-medium">{VENUE.pricePerHour}</span>
+   353→                        </div>
+   354→                      </div>
+   355→                      <div className="space-y-3">
+   356→                        <div>
+   357→                          <Label htmlFor="name">Nom complet</Label>
+   358→                          <Input id="name" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5" />
+   359→                        </div>
+   360→                        <div>
+   361→                          <Label htmlFor="phone">Téléphone</Label>
+   362→                          <Input id="phone" placeholder="+221 7X XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1.5" />
+   363→                        </div>
+   364→                      </div>
+   365→                      <div className="flex gap-3 pt-2">
+   366→                        <Button variant="outline" className="flex-1" onClick={() => setStep('select')}>Retour</Button>
+   367→                        <Button
+   368→                          className="flex-1"
+   369→                          disabled={!name || !phone || isSubmitting}
+   370→                          onClick={handleConfirm}
+   371→                        >
+   372→                          {isSubmitting ? (
+   373→                            <span className="flex items-center gap-2">
+   374→                              <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+   375→                              Réservation...
+   376→                            </span>
+   377→                          ) : (
+   378→                            'Confirmer'
+   379→                          )}
+   380→                        </Button>
+   381→                      </div>
+   382→                    </div>
+   383→                  )}
+   384→                </div>
+   385→              </ScrollArea>
+   386→            </div>
+   387→          </>
+   388→        )}
+   389→      </DialogContent>
+   390→    </Dialog>
+   391→  );
+   392→}
+   393→
+   394→/* ═══════════════════════════════════════════
+   395→   Main Page
+   396→   ═══════════════════════════════════════════ */
+   397→
+   398→export default function HomePage() {
+   399→  const [view, setView] = useState<'landing' | 'dashboard'>('landing');
+   400→  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   401→  const [bookingOpen, setBookingOpen] = useState(false);
+   402→  const [scrolled, setScrolled] = useState(false);
+   403→
+   404→  const handleBackToLanding = useCallback(() => {
+   405→    setView('landing');
+   406→    window.scrollTo({ top: 0, behavior: 'smooth' });
+   407→  }, []);
+   408→
+   409→  useEffect(() => {
+   410→    const handleScroll = () => setScrolled(window.scrollY > 50);
+   411→    window.addEventListener('scroll', handleScroll, { passive: true });
+   412→    return () => window.removeEventListener('scroll', handleScroll);
+   413→  }, []);
+   414→
+   415→  const statsRef = useRef<HTMLDivElement>(null);
+   416→  const statsInView = useInView(statsRef, { once: true });
+   417→
+   418→  if (view === 'dashboard') {
+   419→    return <Dashboard onBack={handleBackToLanding} />;
+   420→  }
+   421→
+   422→  return (
+   423→    <div className="min-h-screen flex flex-col">
+   424→      {/* ─── Navbar ─── */}
+   425→      <header
+   426→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   427→          scrolled ? 'bg-background/90 backdrop-blur-xl border-b border-border shadow-lg' : 'bg-transparent'
+   428→        }`}
+   429→      >
+   430→        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   431→          <a href="#" className="flex items-center gap-2.5 group">
+   432→            <Image src="/logo.png" alt="ZalFoot" width={36} height={36} className="rounded-md" />
+   433→            <span className="text-xl font-bold tracking-tight">
+   434→              <span className="text-primary">Zal</span>
+   435→              <span className="text-foreground">Foot</span>
+   436→            </span>
+   437→          </a>
+   438→
+   439→          <div className="hidden md:flex items-center gap-5">
+   440→            {NAV_LINKS.map((link) => (
+   441→              <a key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+   442→                {link.label}
+   443→              </a>
+   444→            ))}
+   445→            <div className="w-px h-4 bg-border" />
+   446→            <button
+   447→              onClick={() => setView('dashboard')}
+   448→              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+   449→            >
+   450→              <LayoutDashboard className="w-3.5 h-3.5" />
+   451→              Dashboard
+   452→            </button>
+   453→            <Button size="sm" className="glow-green" onClick={() => setBookingOpen(true)}>
+   454→              <Zap className="w-4 h-4 mr-1.5" />
+   455→              Réserver
+   456→            </Button>
+   457→          </div>
+   458→
+   459→          <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
+   460→            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+   461→          </button>
+   462→        </nav>
+   463→
+   464→        <AnimatePresence>
+   465→          {mobileMenuOpen && (
+   466→            <motion.div
+   467→              initial={{ opacity: 0, height: 0 }}
+   468→              animate={{ opacity: 1, height: 'auto' }}
+   469→              exit={{ opacity: 0, height: 0 }}
+   470→              className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border overflow-hidden"
+   471→            >
+   472→              <div className="px-4 py-4 space-y-3">
+   473→                {NAV_LINKS.map((link) => (
+   474→                  <a key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">
+   475→                    {link.label}
+   476→                  </a>
+   477→                ))}
+   478→                <button
+   479→                  onClick={() => { setMobileMenuOpen(false); setView('dashboard'); }}
+   480→                  className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
+   481→                >
+   482→                  <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+   483→                </button>
+   484→                <Button className="w-full glow-green" onClick={() => { setMobileMenuOpen(false); setBookingOpen(true); }}>
+   485→                  <Zap className="w-4 h-4 mr-1.5" /> Réserver
+   486→                </Button>
+   487→              </div>
+   488→            </motion.div>
+   489→          )}
+   490→        </AnimatePresence>
+   491→      </header>
+   492→
+   493→      <main className="flex-1">
+   494→        {/* ─── Hero ─── */}
+   495→        <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+   496→          <div className="absolute inset-0">
+   497→            <Image src="/hero-bg.png" alt="Terrain de football" fill className="object-cover" priority quality={85} />
+   498→            <div className="hero-overlay absolute inset-0" />
+   499→          </div>
+   500→          <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center pt-20">
+   501→            <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm border border-primary/20 bg-primary/10">
+   502→              <MapPin className="w-3.5 h-3.5 mr-1.5" />
+   503→              DAKAR · SÉNÉGAL
+   504→            </Badge>
+   505→            <motion.h1
+   506→              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight"
+   507→              initial={{ opacity: 0, y: 30 }}
+   508→              animate={{ opacity: 1, y: 0 }}
+   509→              transition={{ duration: 0.8, delay: 0.1 }}
+   510→            >
+   511→              Le match
+   512→              <br />
+   513→              <span className="text-primary">commence ici.</span>
+   514→            </motion.h1>
+   515→            <motion.p
+   516→              className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed"
+   517→              initial={{ opacity: 0, y: 20 }}
+   518→              animate={{ opacity: 1, y: 0 }}
+   519→              transition={{ duration: 0.8, delay: 0.3 }}
+   520→            >
+   521→              Réservez votre terrain en 30 secondes. Aucun compte requis.
+   522→            </motion.p>
+   523→            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.5 }} className="mt-10">
+   524→              <Button size="lg" className="text-lg px-8 py-6 glow-green" onClick={() => setBookingOpen(true)}>
+   525→                <Zap className="w-5 h-5 mr-2" /> Réserver maintenant
+   526→              </Button>
+   527→            </motion.div>
+   528→            <motion.div
+   529→              className="absolute bottom-8 left-1/2 -translate-x-1/2 bounce-down"
+   530→              initial={{ opacity: 0 }}
+   531→              animate={{ opacity: 1 }}
+   532→              transition={{ delay: 1.5 }}
+   533→            >
+   534→              <ChevronDown className="w-6 h-6 text-muted-foreground" />
+   535→            </motion.div>
+   536→          </div>
+   537→        </section>
+   538→
+   539→        {/* ─── Stats ─── */}
+   540→        <section ref={statsRef} className="relative z-10 -mt-12 sm:-mt-16">
+   541→          <div className="max-w-3xl mx-auto px-4 sm:px-6">
+   542→            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+   543→              {STATS.map((stat, i) => (
+   544→                <motion.div
+   545→                  key={stat.label}
+   546→                  className="bg-card/80 backdrop-blur-lg border border-border rounded-2xl p-4 sm:p-6 text-center"
+   547→                  initial={{ opacity: 0, y: 30 }}
+   548→                  animate={statsInView ? { opacity: 1, y: 0 } : {}}
+   549→                  transition={{ duration: 0.5, delay: i * 0.15 }}
+   550→                >
+   551→                  <div className="text-2xl sm:text-4xl font-extrabold text-primary">
+   552→                    <AnimatedCounter value={stat.value} suffix={stat.suffix} inView={statsInView} />
+   553→                  </div>
+   554→                  <div className="mt-1 text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">
+   555→                    {stat.label}
+   556→                  </div>
+   557→                </motion.div>
+   558→              ))}
+   559→            </div>
+   560→          </div>
+   561→        </section>
+   562→
+   563→        {/* ─── How It Works ─── */}
+   564→        <Section id="steps" className="py-20 sm:py-28">
+   565→          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   566→            <div className="text-center mb-14">
+   567→              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Simple & rapide</p>
+   568→              <h2 className="text-2xl sm:text-3xl font-bold">Comment ça marche</h2>
+   569→            </div>
+   570→            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+   571→              {STEPS.map((s, i) => (
+   572→                <motion.div
+   573→                  key={s.number}
+   574→                  className="step-card bg-card rounded-2xl p-6 sm:p-8"
+   575→                  initial={{ opacity: 0, y: 30 }}
+   576→                  whileInView={{ opacity: 1, y: 0 }}
+   577→                  viewport={{ once: true, margin: '-60px' }}
+   578→                  transition={{ duration: 0.5, delay: i * 0.15 }}
+   579→                >
+   580→                  <div className="flex items-center gap-3 mb-5">
+   581→                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+   582→                      <s.icon className="w-5 h-5 text-primary" />
+   583→                    </div>
+   584→                    <span className="text-3xl font-black text-primary/10">{s.number}</span>
+   585→                  </div>
+   586→                  <h3 className="text-lg font-bold mb-2">{s.title}</h3>
+   587→                  <p className="text-sm text-muted-foreground leading-relaxed">{s.description}</p>
+   588→                </motion.div>
+   589→              ))}
+   590→            </div>
+   591→          </div>
+   592→        </Section>
+   593→
+   594→        {/* ─── Venue Section ─── */}
+   595→        <Section id="terrains" className="py-20 sm:py-28 bg-secondary/30">
+   596→          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   597→            <div className="text-center mb-14">
+   598→              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Le terrain</p>
+   599→              <h2 className="text-2xl sm:text-3xl font-bold">{VENUE.name}</h2>
+   600→            </div>
+   601→
+   602→            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+   603→              <div className="relative rounded-2xl overflow-hidden aspect-video">
+   604→                <Image src="/terrain.png" alt={VENUE.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+   605→                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+   606→                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-background/70 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   607→                  <MapPin className="w-3.5 h-3.5 text-primary" />
+   608→                  <span className="text-xs font-medium">{VENUE.location}</span>
+   609→                </div>
+   610→              </div>
+   611→
+   612→              <div className="space-y-5">
+   613→                <p className="text-muted-foreground leading-relaxed">{VENUE.description}</p>
+   614→                <div className="grid grid-cols-2 gap-3">
+   615→                  {[
+   616→                    { label: 'Prix / heure', value: VENUE.pricePerHour, icon: CreditCard },
+   617→                    { label: 'Acompte', value: VENUE.deposit, icon: ShieldCheck },
+   618→                    { label: 'Capacité', value: VENUE.capacity, icon: Users },
+   619→                    { label: 'Horaires', value: VENUE.hours, icon: Clock },
+   620→                  ].map((item) => (
+   621→                    <div key={item.label} className="bg-card rounded-xl p-4 border border-border">
+   622→                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">{item.label}</p>
+   623→                      <div className="flex items-center gap-2">
+   624→                        <item.icon className="w-4 h-4 text-primary" />
+   625→                        <p className="text-base font-bold">{item.value}</p>
+   626→                      </div>
+   627→                    </div>
+   628→                  ))}
+   629→                </div>
+   630→                <Button size="lg" className="w-full glow-green" onClick={() => setBookingOpen(true)}>
+   631→                  Voir les créneaux <ArrowRight className="ml-2 w-4 h-4" />
+   632→                </Button>
+   633→              </div>
+   634→            </div>
+   635→          </div>
+   636→        </Section>
+   637→
+   638→        {/* ─── Pricing ─── */}
+   639→        <Section id="pricing" className="py-20 sm:py-28">
+   640→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   641→            <div className="text-center mb-14">
+   642→              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Tarifs transparents</p>
+   643→              <h2 className="text-2xl sm:text-3xl font-bold">Un prix, pas de surprise</h2>
+   644→            </div>
+   645→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+   646→              <motion.div
+   647→                className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center"
+   648→                whileInView={{ opacity: 1, y: 0 }}
+   649→                viewport={{ once: true }}
+   650→                initial={{ opacity: 0, y: 20 }}
+   651→              >
+   652→                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+   653→                  <Clock className="w-6 h-6 text-primary" />
+   654→                </div>
+   655→                <h3 className="text-lg font-bold mb-2">1 heure</h3>
+   656→                <p className="text-3xl font-extrabold text-primary">
+   657→                  25 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
+   658→                </p>
+   659→                <p className="text-sm text-muted-foreground mt-2">Jusqu&rsquo;à 14 joueurs</p>
+   660→              </motion.div>
+   661→              <motion.div
+   662→                className="bg-card border border-primary/30 rounded-2xl p-6 sm:p-8 text-center relative overflow-hidden"
+   663→                whileInView={{ opacity: 1, y: 0 }}
+   664→                viewport={{ once: true }}
+   665→                initial={{ opacity: 0, y: 20 }}
+   666→                transition={{ delay: 0.1 }}
+   667→              >
+   668→                <div className="absolute top-3 right-3">
+   669→                  <Badge className="bg-primary text-primary-foreground text-xs">Populaire</Badge>
+   670→                </div>
+   671→                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+   672→                  <Zap className="w-6 h-6 text-primary" />
+   673→                </div>
+   674→                <h3 className="text-lg font-bold mb-2">Acompte</h3>
+   675→                <p className="text-3xl font-extrabold text-primary">
+   676→                  5 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
+   677→                </p>
+   678→                <p className="text-sm text-muted-foreground mt-2">Le reste sur place</p>
+   679→              </motion.div>
+   680→            </div>
+   681→          </div>
+   682→        </Section>
+   683→
+   684→        {/* ─── CTA ─── */}
+   685→        <Section className="py-20 sm:py-28 bg-secondary/30">
+   686→          <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+   687→            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Prêt à jouer ?</h2>
+   688→            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-md mx-auto">
+   689→              Sélectionnez votre créneau — seul votre numéro suffit.
+   690→            </p>
+   691→            <Button size="lg" className="text-lg px-10 py-6 glow-green" onClick={() => setBookingOpen(true)}>
+   692→              <Zap className="w-5 h-5 mr-2" /> Réserver maintenant
+   693→            </Button>
+   694→          </div>
+   695→        </Section>
+   696→      </main>
+   697→
+   698→      {/* ─── Footer ─── */}
+   699→      <footer className="border-t border-border py-8 mt-auto">
+   700→        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+   701→          <div className="flex items-center gap-2">
+   702→            <Image src="/logo.png" alt="ZalFoot" width={24} height={24} className="rounded" />
+   703→            <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
+   704→          </div>
+   705→          <p className="text-xs text-muted-foreground">
+   706→            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Dakar
+   707→          </p>
+   708→          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   709→            <a href="#" className="hover:text-foreground transition-colors">Mentions légales</a>
+   710→            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+   711→          </div>
+   712→        </div>
+   713→      </footer>
+   714→
+   715→      <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
+   716→    </div>
+   717→  );
+   718→}
+   719→

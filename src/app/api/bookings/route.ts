@@ -25,12 +25,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if slot is already booked
+    // Check if slot is already booked (confirmed or pending)
     const existing = await db.booking.findFirst({
       where: { date, timeSlot, status: 'confirmed' },
     });
+    const existingPending = await db.booking.findFirst({
+      where: { date, timeSlot, status: 'pending' },
+    });
 
-    if (existing) {
+    if (existing || existingPending) {
       return NextResponse.json(
         { error: 'Ce créneau est déjà réservé.' },
         { status: 409 }
@@ -73,13 +76,18 @@ export async function GET(request: NextRequest) {
       allSlots.push(`${h.toString().padStart(2, '0')}:00`);
     }
 
-    // Find booked slots
-    const bookings = await db.booking.findMany({
+    // Find booked slots (confirmed and pending both block the slot)
+    const confirmedBookings = await db.booking.findMany({
       where: { date, status: 'confirmed' },
-      select: { timeSlot: true },
+    });
+    const pendingBookings = await db.booking.findMany({
+      where: { date, status: 'pending' },
     });
 
-    const bookedSlots = new Set(bookings.map((b) => b.timeSlot));
+    const bookedSlots = new Set([
+      ...confirmedBookings.map((b) => b.timeSlot),
+      ...pendingBookings.map((b) => b.timeSlot),
+    ]);
 
     const available = allSlots.map((slot) => ({
       time: slot,

@@ -29,10 +29,12 @@ import {
   X,
   LayoutDashboard,
   CreditCard,
+  User,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Dashboard from '@/components/dashboard';
+import UserPanel from '@/components/user-panel';
 
 /* ═══════════════════════════════════════════
    Types & Constants
@@ -396,7 +398,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
    ═══════════════════════════════════════════ */
 
 export default function HomePage() {
-  const [view, setView] = useState<'landing' | 'dashboard'>('landing');
+  const [view, setView] = useState<'landing' | 'dashboard' | 'user'>('landing');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -404,6 +406,11 @@ export default function HomePage() {
   const handleBackToLanding = useCallback(() => {
     setView('landing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleToUserPanel = useCallback(() => {
+    setView('user');
+    window.scrollTo({ top: 0 });
   }, []);
 
   useEffect(() => {
@@ -417,6 +424,10 @@ export default function HomePage() {
 
   if (view === 'dashboard') {
     return <Dashboard onBack={handleBackToLanding} />;
+  }
+
+  if (view === 'user') {
+    return <UserPanel onBack={handleBackToLanding} />;
   }
 
   return (
@@ -443,6 +454,13 @@ export default function HomePage() {
               </a>
             ))}
             <div className="w-px h-4 bg-border" />
+            <button
+              onClick={handleToUserPanel}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <User className="w-3.5 h-3.5" />
+              Mon espace
+            </button>
             <button
               onClick={() => setView('dashboard')}
               className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
@@ -475,6 +493,12 @@ export default function HomePage() {
                     {link.label}
                   </a>
                 ))}
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleToUserPanel(); }}
+                  className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
+                >
+                  <User className="w-3.5 h-3.5" /> Mon espace
+                </button>
                 <button
                   onClick={() => { setMobileMenuOpen(false); setView('dashboard'); }}
                   className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
