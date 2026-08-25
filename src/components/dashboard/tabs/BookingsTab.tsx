@@ -99,7 +99,10 @@ export default function BookingsTab() {
       const res = await fetch('/api/admin/bookings', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.ok) setBookings(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        setBookings(json.data || json || []);
+      }
     } catch { /* silent */ } finally {
       setLoading(false);
     }

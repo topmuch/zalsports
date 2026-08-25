@@ -88,7 +88,10 @@ export default function UsersTab() {
       const res = await fetch('/api/admin/users', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.ok) setUsers(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        setUsers(json.data || json || []);
+      }
     } catch { /* silent */ } finally {
       setLoading(false);
     }
