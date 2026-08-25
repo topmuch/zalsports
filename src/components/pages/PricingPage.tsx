@@ -99,7 +99,7 @@ export default function PricingPage({ onBack, onBook }: { onBack: () => void; on
               key={plan.name}
               className={`relative bg-card border rounded-2xl p-6 sm:p-8 flex flex-col ${
                 plan.popular
-                  ? 'border-primary/40 shadow-[0_0_40px_oklch(0.65_0.2_150/0.1)]'
+                  ? 'border-primary/40 shadow-[0_0_40px_oklch(0.55_0.19_145/0.15)]'
                   : 'border-border'
               }`}
               initial={{ opacity: 0, y: 25 }}

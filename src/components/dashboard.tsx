@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -33,7 +34,6 @@ import {
 import {
   LayoutDashboard,
   CalendarCheck,
-  TrendingUp,
   Users,
   DollarSign,
   Clock,
@@ -44,8 +44,12 @@ import {
   RefreshCw,
   BarChart3,
   Activity,
+  Lock,
+  LogOut,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
-import { format, parseISO, isToday, isTomorrow, isAfter } from 'date-fns';
+import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 /* ═══════════════════════════════════════════
@@ -81,12 +85,14 @@ interface BookingRow {
    Chart Config
    ═══════════════════════════════════════════ */
 
+const chartGreen = 'oklch(0.55 0.19 145)';
+
 const hourlyChartConfig = {
-  count: { label: 'Réservations', color: 'oklch(0.65 0.2 150)' },
+  count: { label: 'Réservations', color: chartGreen },
 } satisfies ChartConfig;
 
 const dailyChartConfig = {
-  revenue: { label: 'Revenus (FCFA)', color: 'oklch(0.65 0.2 150)' },
+  revenue: { label: 'Revenus (FCFA)', color: chartGreen },
 } satisfies ChartConfig;
 
 /* ═══════════════════════════════════════════
@@ -109,7 +115,7 @@ function statusBadge(status: string) {
     case 'confirmed':
       return <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">Confirmé</Badge>;
     case 'completed':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">Terminé</Badge>;
+      return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20">Terminé</Badge>;
     case 'cancelled':
       return <Badge className="bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/20">Annulé</Badge>;
     default:
@@ -151,43 +157,224 @@ function KpiCard({
 }
 
 /* ═══════════════════════════════════════════
+   Login Screen
+   ═══════════════════════════════════════════ */
+
+function LoginScreen({
+  onLogin,
+  onBack,
+}: {
+  onLogin: (token: string) => void;
+  onBack: () => void;
+}) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        const { token } = await res.json();
+        localStorage.setItem('zalsports_admin_token', token);
+        onLogin(token);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Identifiants incorrects.');
+      }
+    } catch {
+      setError('Erreur de connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-sm space-y-8"
+      >
+        {/* Logo & Title */}
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <ShieldCheck className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">
+              <span className="text-primary">Zal</span>Foot
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Accès administration</p>
+          </div>
+        </div>
+
+        {/* Login Card */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium text-muted-foreground">
+                  Identifiant
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="admin"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  autoFocus
+                  className="bg-background border-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-muted-foreground">
+                  Mot de passe
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-background border-border"
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-destructive text-center">{error}</p>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !username || !password}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4 mr-2" />
+                )}
+                {loading ? 'Connexion...' : 'Se connecter'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Retour au site
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    Dashboard
    ═══════════════════════════════════════════ */
 
 export default function Dashboard({ onBack }: { onBack: () => void }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'upcoming' | 'recent'>('upcoming');
 
+  // Check for existing token on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('zalsports_admin_token');
+    if (stored) {
+      fetch('/api/auth/verify', {
+        headers: { Authorization: `Bearer ${stored}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.valid) {
+            setToken(stored);
+          } else {
+            localStorage.removeItem('zalsports_admin_token');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('zalsports_admin_token');
+        })
+        .finally(() => setAuthChecked(true));
+    } else {
+      setAuthChecked(true);
+    }
+  }, []);
+
+  const handleLogin = useCallback((t: string) => {
+    setToken(t);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('zalsports_admin_token');
+    setToken(null);
+    setStats(null);
+  }, []);
+
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch('/api/dashboard', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
       if (res.ok) setStats(await res.json());
     } catch { /* silent */ } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, handleLogout]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => {
+    if (token) fetchStats();
+  }, [token, fetchStats]);
 
   const handleCancel = useCallback(async (id: string) => {
+    if (!token) return;
     try {
-      const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) { handleLogout(); return; }
       if (res.ok) fetchStats();
     } catch { /* silent */ }
-  }, [fetchStats]);
+  }, [token, fetchStats, handleLogout]);
 
   const handleComplete = useCallback(async (id: string) => {
+    if (!token) return;
     try {
       const res = await fetch(`/api/bookings/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ status: 'completed' }),
       });
+      if (res.status === 401) { handleLogout(); return; }
       if (res.ok) fetchStats();
     } catch { /* silent */ }
-  }, [fetchStats]);
+  }, [token, fetchStats, handleLogout]);
 
   const hourlyData = stats
     ? Object.entries(stats.hourlyDistribution)
@@ -203,6 +390,20 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
     : [];
 
   const displayedBookings = tab === 'upcoming' ? stats?.upcomingBookings || [] : stats?.recentBookings || [];
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!token) {
+    return <LoginScreen onLogin={handleLogin} onBack={onBack} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -224,9 +425,14 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
               <LayoutDashboard className="w-3 h-3 mr-1" /> Admin
             </Badge>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading}>
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
+              <LogOut className="w-3.5 h-3.5 mr-1.5" /> Déconnexion
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading}>
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -297,15 +503,15 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                       <AreaChart data={dailyData}>
                         <defs>
                           <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="oklch(0.65 0.2 150)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="oklch(0.65 0.2 150)" stopOpacity={0} />
+                            <stop offset="5%" stopColor={chartGreen} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={chartGreen} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.015 150)" />
-                        <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 150)' }} />
-                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 150)' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.9 0.005 150)" />
+                        <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.48 0.02 150)' }} />
+                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.48 0.02 150)' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Area type="monotone" dataKey="revenue" stroke="oklch(0.65 0.2 150)" fill="url(#fillRevenue)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="revenue" stroke={chartGreen} fill="url(#fillRevenue)" strokeWidth={2} />
                       </AreaChart>
                     </ChartContainer>
                   </CardContent>
@@ -322,11 +528,11 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   <CardContent className="pt-0">
                     <ChartContainer config={hourlyChartConfig} className="h-[220px] w-full">
                       <BarChart data={hourlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.015 150)" />
-                        <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 150)' }} />
-                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 150)' }} allowDecimals={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.9 0.005 150)" />
+                        <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.48 0.02 150)' }} />
+                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: 'oklch(0.48 0.02 150)' }} allowDecimals={false} />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="count" fill="oklch(0.65 0.2 150)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                        <Bar dataKey="count" fill={chartGreen} radius={[4, 4, 0, 0]} maxBarSize={28} />
                       </BarChart>
                     </ChartContainer>
                   </CardContent>
@@ -402,7 +608,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                                 {b.status === 'confirmed' && (
                                   <div className="flex items-center justify-end gap-1">
                                     <Button
-                                      variant="ghost" size="sm" className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                      variant="ghost" size="sm" className="h-7 px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
                                       onClick={() => handleComplete(b.id)} title="Marquer terminé"
                                     >
                                       <CheckCircle2 className="w-3.5 h-3.5" />

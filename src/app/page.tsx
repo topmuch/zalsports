@@ -477,15 +477,15 @@ export default function HomePage() {
       {/* ─── Navbar ─── */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-background/90 backdrop-blur-xl border-b border-border shadow-lg' : 'bg-transparent'
+          scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-border shadow-sm' : 'bg-transparent'
         }`}
       >
         <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2.5 group">
-            <Image src="/logo.png" alt="ZalFoot" width={36} height={36} className="rounded-md" />
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-primary">Zal</span>
-              <span className="text-foreground">Foot</span>
+          <a href="#" className="flex items-center gap-3 group">
+            <Image src="/logo.png" alt="ZalFoot" width={48} height={48} className="rounded-lg" />
+            <span className={`text-2xl font-bold tracking-tight transition-colors ${scrolled ? '' : 'text-white'}`}>
+              <span className={scrolled ? 'text-primary' : 'text-green-400'}>Zal</span>
+              <span className={scrolled ? 'text-foreground' : 'text-white'}>Foot</span>
             </span>
           </a>
 
@@ -495,39 +495,39 @@ export default function HomePage() {
                 <button
                   key={link.label}
                   onClick={() => navigateTo(link.view!)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'}`}
                 >
                   {link.label}
                 </button>
               ) : (
-                <a key={link.label} href={(link as { href: string }).href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <a key={link.label} href={(link as { href: string }).href} className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'}`}>
                   {link.label}
                 </a>
               )
             ))}
-            <div className="w-px h-4 bg-border" />
+            <div className={`w-px h-4 ${scrolled ? 'bg-border' : 'bg-white/20'}`} />
             <button
               onClick={() => navigateTo('about')}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
             >
               À propos
             </button>
             <button
               onClick={() => navigateTo('contact')}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
             >
               Contact
             </button>
             <button
               onClick={() => navigateTo('user')}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+              className={`text-sm transition-colors flex items-center gap-1.5 ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
             >
               <User className="w-3.5 h-3.5" />
               Mon espace
             </button>
             <button
               onClick={() => navigateTo('dashboard')}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+              className={`text-sm transition-colors flex items-center gap-1.5 ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
               Dashboard
@@ -538,7 +538,7 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
+          <button className={`md:hidden p-2 ${scrolled ? 'text-foreground' : 'text-white'}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </nav>
@@ -608,7 +608,7 @@ export default function HomePage() {
             <div className="hero-overlay absolute inset-0" />
           </div>
           <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center pt-20">
-            <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm border border-primary/20 bg-primary/10">
+            <Badge className="mb-6 px-4 py-1.5 text-sm bg-white/15 text-white border border-white/20 backdrop-blur-sm">
               <MapPin className="w-3.5 h-3.5 mr-1.5" />
               CROISEMENT KAOLACK - MBOUR · SÉNÉGAL
             </Badge>
@@ -620,10 +620,10 @@ export default function HomePage() {
             >
               Le match
               <br />
-              <span className="text-primary">commence ici.</span>
+              <span className="text-green-400">commence ici.</span>
             </motion.h1>
             <motion.p
-              className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed"
+              className="mt-6 text-lg sm:text-xl text-white/80 max-w-xl mx-auto leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
@@ -641,7 +641,7 @@ export default function HomePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5 }}
             >
-              <ChevronDown className="w-6 h-6 text-muted-foreground" />
+              <ChevronDown className="w-6 h-6 text-white/60" />
             </motion.div>
           </div>
         </section>
@@ -715,7 +715,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div className="relative rounded-2xl overflow-hidden aspect-video">
                 <Image src="/terrain.png" alt={VENUE.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-background/70 backdrop-blur-sm rounded-lg px-3 py-1.5">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-medium">{VENUE.location}</span>
@@ -814,8 +814,8 @@ export default function HomePage() {
       {/* ─── Footer ─── */}
       <footer className="border-t border-border py-8 mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="ZalFoot" width={24} height={24} className="rounded" />
+          <div className="flex items-center gap-2.5">
+            <Image src="/logo.png" alt="ZalFoot" width={36} height={36} className="rounded-lg" />
             <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
           </div>
           <p className="text-xs text-muted-foreground">

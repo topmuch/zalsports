@@ -110,7 +110,7 @@ function statusBadge(status: Booking['status']) {
     case 'confirmed':
       return <Badge className="bg-primary/15 text-primary border-primary/30">Confirmé</Badge>;
     case 'completed':
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Terminé</Badge>;
+      return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30">Terminé</Badge>;
     case 'cancelled':
       return <Badge className="bg-destructive/15 text-destructive border-destructive/30">Annulé</Badge>;
   }
@@ -120,7 +120,7 @@ function paymentBadge(status: Booking['paymentStatus']) {
   switch (status) {
     case 'paid':
       return (
-        <span className="flex items-center gap-1 text-xs text-emerald-400">
+        <span className="flex items-center gap-1 text-xs text-emerald-600">
         <CheckCircle2 className="w-3 h-3" /> Payé
       </span>
       );
@@ -434,7 +434,7 @@ function ReservationsTab({ phone }: { phone: string }) {
                     </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><CreditCard className="w-3 h-3" /> {formatMoney(b.amount)}</span>
-                      {b.depositPaid > 0 && <span className="text-emerald-400">Acompte: {formatMoney(b.depositPaid)}</span>}
+                      {b.depositPaid > 0 && <span className="text-emerald-600">Acompte: {formatMoney(b.depositPaid)}</span>}
                     </div>
                   </div>
                   {!isPast && (b.status === 'confirmed' || b.status === 'pending') && (
@@ -710,7 +710,7 @@ function SettingsTab({ phone, initialName }: { phone: string; initialName: strin
       <Button className="w-full" onClick={handleSave} disabled={saving}>
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1.5" /> Enregistrer</>}
       </Button>
-      {saved && <p className="text-xs text-emerald-400 text-center">Paramètres sauvegardés.</p>}
+      {saved && <p className="text-xs text-emerald-600 text-center">Paramètres sauvegardés.</p>}
     </div>
   );
 }
@@ -802,7 +802,7 @@ export default function UserPanel({ onBack }: { onBack: () => void }) {
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">À venir</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-emerald-400">{stats.byStatus.completed}</p>
+                <p className="text-lg font-bold text-emerald-600">{stats.byStatus.completed}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terminées</p>
               </div>
               <div className="bg-card border border-border rounded-xl p-3 text-center">

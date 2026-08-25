@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/app/data/zalsports.db
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-zalsports2024}
+      - ADMIN_SECRET=${ADMIN_SECRET:-change-me-in-production}
+      - NODE_ENV=production
+    volumes:
+      - zalsports_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  zalsports_data:
