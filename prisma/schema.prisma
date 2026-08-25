@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more at the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,13 +7,75 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Booking {
+model User {
   id           String   @id @default(cuid())
-  date         String   // yyyy-MM-dd
-  timeSlot     String   // HH:00
-  customerName String
-  customerPhone String
-  status       String   @default("confirmed") // confirmed, cancelled, completed
+  name         String
+  phone        String   @unique
+  email        String?
+  role         String   @default("user") // admin, user
+  notifications Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  bookings     Booking[]     @relation("UserBookings")
+  subscriptions Subscription[] @relation("UserSubscriptions")
+}
+
+model Booking {
+  id             String   @id @default(cuid())
+  date           String   // yyyy-MM-dd
+  timeSlot       String   // HH:00
+  customerName   String
+  customerPhone  String
+  status         String   @default("confirmed") // pending, confirmed, completed, cancelled
+  paymentStatus  String   @default("unpaid") // unpaid, partial, paid
+  paymentMethod  String?  // wave, orange_money, cash
+  amount         Int      @default(25000)
+  depositPaid    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User    @relation("UserBookings", fields: [customerPhone], references: [phone])
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      // in FCFA
+  duration    String   // "1 month", "3 months", etc.
+  features    String   // JSON string of features
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  subscriptions Subscription[] @relation("PlanSubscriptions")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  planId    String
+  startDate String   // yyyy-MM-dd
+  endDate   String   // yyyy-MM-dd
+  status    String   @default("active") // active, expired, cancelled
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserSubscriptions", fields: [userId], references: [id])
+  plan      SubscriptionPlan @relation("PlanSubscriptions", fields: [planId], references: [id])
+}
+
+model SiteSettings {
+  id        String @id @default(cuid())
+  key       String @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  name      String   // wave, orange_money, cash
+  label     String   // "Wave", "Orange Money"
+  active    Boolean  @default(true)
+  logoUrl   String?
+  phone     String? // merchant phone for payment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

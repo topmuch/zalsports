@@ -183,11 +183,16 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [step, setStep] = useState<'select' | 'info' | 'confirm'>('select');
+  const [step, setStep] = useState<'select' | 'info' | 'payment' | 'confirm'>('select');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | null>(null);
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   const fetchSlots = useCallback(async (date: Date) => {
     setLoadingSlots(true);
@@ -220,6 +225,11 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       setStep('select');
       setName('');
       setPhone('');
+      setPaymentMethod(null);
+      setPaymentPhone('');
+      setBookingId(null);
+      setIsPaying(false);
+      setConfirmingPayment(false);
       fetchSlots(tomorrow);
     }
   }, [open, fetchSlots]);
@@ -231,7 +241,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     }
   }, [selectedDate, open, fetchSlots]);
 
-  const handleConfirm = useCallback(async () => {
+  const handleConfirmInfo = useCallback(async () => {
     if (!selectedSlot || !selectedDate || !name || !phone) return;
     setIsSubmitting(true);
     try {
@@ -245,13 +255,67 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           customerPhone: phone,
         }),
       });
-      if (res.ok) setStep('confirm');
+      if (res.ok) {
+        const data = await res.json();
+        setBookingId(data.id || data.booking?.id || null);
+        setPaymentPhone(phone);
+        setStep('payment');
+      }
     } catch {
       // silent
     } finally {
       setIsSubmitting(false);
     }
   }, [selectedSlot, selectedDate, name, phone]);
+
+  const handleInitiatePayment = useCallback(async () => {
+    if (!paymentMethod || !paymentPhone || !bookingId) return;
+    setIsPaying(true);
+    try {
+      const res = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId,
+          method: paymentMethod,
+          phone: paymentPhone,
+          amount: 5000,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.paymentUrl) {
+          window.open(data.paymentUrl, '_blank');
+        }
+        setStep('confirm');
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsPaying(false);
+    }
+  }, [paymentMethod, paymentPhone, bookingId]);
+
+  const handleConfirmPaid = useCallback(async () => {
+    if (!bookingId || !paymentMethod) return;
+    setConfirmingPayment(true);
+    try {
+      await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentStatus: 'partial',
+          paymentMethod,
+          depositPaid: 5000,
+        }),
+      });
+      setStep('confirm');
+    } catch {
+      // silent
+    } finally {
+      setConfirmingPayment(false);
+    }
+  }, [bookingId, paymentMethod]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -277,17 +341,39 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 <span className="font-medium">{selectedSlot?.label}</span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Méthode de paiement</span>
+                <span className="font-medium">{paymentMethod === 'wave' ? 'Wave' : paymentMethod === 'orange_money' ? 'Orange Money' : '—'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Acompte</span>
                 <span className="font-medium text-primary">5 000 FCFA</span>
               </div>
             </div>
-            <Button className="mt-4 w-full max-w-sm" onClick={() => onOpenChange(false)}>Fermer</Button>
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 w-full max-w-sm mt-1">
+              <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Paiement initié — Vérifiez votre application</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-500/70 mt-1">Si vous avez effectué le paiement, confirmez ci-dessous.</p>
+            </div>
+            <Button
+              className="mt-2 w-full max-w-sm bg-primary hover:bg-primary/90"
+              disabled={confirmingPayment}
+              onClick={handleConfirmPaid}
+            >
+              {confirmingPayment ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Vérification...
+                </span>
+              ) : (
+                "J'ai payé"
+              )}
+            </Button>
+            <Button variant="outline" className="w-full max-w-sm" onClick={() => onOpenChange(false)}>Fermer</Button>
           </div>
         ) : (
           <>
             <DialogHeader className="p-6 pb-2">
               <DialogTitle className="text-xl font-bold">Réserver un créneau</DialogTitle>
-              <DialogDescription>{step === 'select' ? 'Choisissez votre date et votre horaire' : 'Complétez vos informations'}</DialogDescription>
+              <DialogDescription>{step === 'select' ? 'Choisissez votre date et votre horaire' : step === 'info' ? 'Complétez vos informations' : 'Choisissez votre méthode de paiement'}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full max-h-[60vh]">
@@ -386,7 +472,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <Button
                           className="flex-1"
                           disabled={!name || !phone || isSubmitting}
-                          onClick={handleConfirm}
+                          onClick={handleConfirmInfo}
                         >
                           {isSubmitting ? (
                             <span className="flex items-center gap-2">
@@ -398,6 +484,130 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           )}
                         </Button>
                       </div>
+                    </div>
+                  )}
+                  {step === 'payment' && (
+                    <div className="space-y-5">
+                      {/* Order Summary */}
+                      <div className="bg-secondary rounded-xl p-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Date</span>
+                          <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Créneau</span>
+                          <span className="font-medium">{selectedSlot?.label}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Prix</span>
+                          <span className="font-medium">{VENUE.pricePerHour}</span>
+                        </div>
+                      </div>
+
+                      {/* Payment Method Selection */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Méthode de paiement</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Wave Card */}
+                          <button
+                            type="button"
+                            onClick={() => { setPaymentMethod('wave'); setPaymentPhone(phone); }}
+                            className={`relative rounded-xl p-4 text-left transition-all ${
+                              paymentMethod === 'wave'
+                                ? 'ring-2 ring-green-400 bg-gradient-to-br from-emerald-500 to-emerald-600'
+                                : 'bg-gradient-to-br from-emerald-500/80 to-emerald-600/80 hover:from-emerald-500 hover:to-emerald-600'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <svg viewBox="0 0 40 40" className="w-10 h-10 flex-shrink-0">
+                                <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
+                                <text x="20" y="26" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="sans-serif">W</text>
+                              </svg>
+                              <div>
+                                <p className="text-white font-bold text-sm">Wave</p>
+                                <p className="text-white/80 text-xs">Payer avec Wave</p>
+                              </div>
+                            </div>
+                            {paymentMethod === 'wave' && (
+                              <div className="mt-1">
+                                <input
+                                  type="tel"
+                                  placeholder="Numéro Wave"
+                                  value={paymentPhone}
+                                  onChange={(e) => setPaymentPhone(e.target.value)}
+                                  className="w-full rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/60 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            )}
+                          </button>
+
+                          {/* Orange Money Card */}
+                          <button
+                            type="button"
+                            onClick={() => { setPaymentMethod('orange_money'); setPaymentPhone(phone); }}
+                            className={`relative rounded-xl p-4 text-left transition-all ${
+                              paymentMethod === 'orange_money'
+                                ? 'ring-2 ring-orange-400 bg-gradient-to-br from-orange-500 to-orange-600'
+                                : 'bg-gradient-to-br from-orange-500/80 to-orange-600/80 hover:from-orange-500 hover:to-orange-600'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <svg viewBox="0 0 40 40" className="w-10 h-10 flex-shrink-0">
+                                <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
+                                <text x="20" y="24" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">OM</text>
+                              </svg>
+                              <div>
+                                <p className="text-white font-bold text-sm">Orange Money</p>
+                                <p className="text-white/80 text-xs">Payer avec Orange Money</p>
+                              </div>
+                            </div>
+                            {paymentMethod === 'orange_money' && (
+                              <div className="mt-1">
+                                <input
+                                  type="tel"
+                                  placeholder="Numéro OM"
+                                  value={paymentPhone}
+                                  onChange={(e) => setPaymentPhone(e.target.value)}
+                                  className="w-full rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/60 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Deposit Amount */}
+                      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+                        <p className="text-sm text-muted-foreground">Acompte</p>
+                        <p className="text-2xl font-extrabold text-primary">5 000 FCFA</p>
+                      </div>
+
+                      {/* Pay Button */}
+                      <Button
+                        className="w-full text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        size="lg"
+                        disabled={!paymentMethod || !paymentPhone || isPaying}
+                        onClick={handleInitiatePayment}
+                      >
+                        {isPaying ? (
+                          <span className="flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Traitement...
+                          </span>
+                        ) : (
+                          `Payer 5 000 FCFA`
+                        )}
+                      </Button>
+
+                      {/* Balance info */}
+                      <p className="text-xs text-center text-muted-foreground">
+                        Le solde (20 000 FCFA) se paie sur place
+                      </p>
+
+                      {/* Back Button */}
+                      <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
                     </div>
                   )}
                 </div>
