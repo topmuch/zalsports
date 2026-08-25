@@ -89,10 +89,22 @@ export async function GET(request: NextRequest) {
       ...pendingBookings.map((b) => b.timeSlot),
     ]);
 
-    const available = allSlots.map((slot) => ({
-      time: slot,
-      available: !bookedSlots.has(slot),
-    }));
+    // Check if there's a custom slot config for this date
+    let configHours: string[] | null = null;
+    try {
+      configHours = await db.slots.getConfig(date);
+    } catch { /* ignore */ }
+
+    const available = allSlots.map((slot) => {
+      // If custom config exists, only listed hours are available
+      if (configHours !== null && !configHours.includes(slot)) {
+        return { time: slot, available: false };
+      }
+      return {
+        time: slot,
+        available: !bookedSlots.has(slot),
+      };
+    });
 
     return NextResponse.json({ date, available });
   } catch (error) {

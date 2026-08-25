@@ -10,6 +10,7 @@ export interface Booking {
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   amount: number;
   depositPaid: number;
+  paymentMethod?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +24,10 @@ export interface UserProfile {
 
 const bookings: Map<string, Booking> = new Map();
 const userProfiles: Map<string, UserProfile> = new Map();
+
+// Available slots config: date -> array of available hour strings (e.g. ["08:00", "09:00", ...])
+// If a date has no entry, all hours 8-23 are available
+const slotConfig: Map<string, string[]> = new Map();
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
@@ -156,11 +161,12 @@ export const db = {
       bookings.set(id, booking);
       return booking;
     },
-    update: async (where: { id: string }, data: { status?: string; paymentStatus?: string; depositPaid?: number }) => {
+    update: async (where: { id: string }, data: { status?: string; paymentStatus?: string; paymentMethod?: string; depositPaid?: number }) => {
       const booking = bookings.get(where.id);
       if (!booking) return null;
       if (data.status) booking.status = data.status as Booking['status'];
       if (data.paymentStatus) booking.paymentStatus = data.paymentStatus as Booking['paymentStatus'];
+      if (data.paymentMethod) booking.paymentMethod = data.paymentMethod;
       if (data.depositPaid !== undefined) booking.depositPaid = data.depositPaid;
       booking.updatedAt = new Date().toISOString();
       return booking;
@@ -237,6 +243,52 @@ export const db = {
     upsert: async (data: { phone: string; name: string; email: string; notifications: boolean }) => {
       userProfiles.set(data.phone, { ...data });
       return userProfiles.get(data.phone)!;
+    },
+  },
+  slots: {
+    /** Get available hours for a date. Returns null if no custom config (meaning all hours 8-23). */
+    getConfig: async (date: string) => {
+      return slotConfig.get(date) || null;
+    },
+    /** Set available hours for a date. Pass empty array to close all slots. */
+    setConfig: async (date: string, hours: string[]) => {
+      if (hours.length === 0) {
+        slotConfig.delete(date);
+      } else {
+        slotConfig.set(date, [...hours].sort());
+      }
+      return slotConfig.get(date) || [];
+    },
+    /** Get all dates that have custom config */
+    getAllConfigs: async () => {
+      const result: Record<string, string[]> = {};
+      for (const [date, hours] of slotConfig.entries()) {
+        result[date] = hours;
+      }
+      return result;
+    },
+    /** Toggle a specific hour for a date */
+    toggleHour: async (date: string, hour: string) => {
+      const current = slotConfig.get(date);
+      if (!current) {
+        // Initialize with all default hours EXCEPT the one being toggled off
+        const allHours: string[] = [];
+        for (let h = 8; h <= 23; h++) {
+          const hStr = `${h.toString().padStart(2, '0')}:00`;
+          if (hStr !== hour) allHours.push(hStr);
+        }
+        slotConfig.set(date, allHours);
+      } else {
+        const idx = current.indexOf(hour);
+        if (idx >= 0) {
+          current.splice(idx, 1);
+          if (current.length === 0) slotConfig.delete(date);
+        } else {
+          current.push(hour);
+          current.sort();
+        }
+      }
+      return slotConfig.get(date) || null;
     },
   },
 };

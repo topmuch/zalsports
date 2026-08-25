@@ -301,7 +301,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     setConfirmingPayment(true);
     try {
       await fetch(`/api/bookings/${bookingId}`, {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentStatus: 'partial',
@@ -690,9 +690,9 @@ export default function HomePage() {
           scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-border shadow-sm' : 'bg-transparent'
         }`}
       >
-        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
           <a href="#" className="flex items-center gap-3 group">
-            <Image src="/logo.png" alt="ZalFoot" width={48} height={48} className="rounded-lg" />
+            <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[96px] h-auto" />
             <span className={`text-2xl font-bold tracking-tight transition-colors ${scrolled ? '' : 'text-white'}`}>
               <span className={scrolled ? 'text-primary' : 'text-green-400'}>Zal</span>
               <span className={scrolled ? 'text-foreground' : 'text-white'}>Foot</span>
@@ -1025,7 +1025,7 @@ export default function HomePage() {
       <footer className="border-t border-border py-8 mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="ZalFoot" width={36} height={36} className="rounded-lg" />
+            <Image src="/logo.png" alt="ZalFoot" width={72} height={72} className="rounded-lg w-[72px] h-auto" />
             <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
           </div>
           <p className="text-xs text-muted-foreground">
