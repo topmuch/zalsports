@@ -51,6 +51,7 @@ import PricingPage from '@/components/pages/PricingPage';
 import ConceptPage from '@/components/pages/ConceptPage';
 import AboutPage from '@/components/pages/AboutPage';
 import PrivacyPage from '@/components/pages/PrivacyPage';
+import CalendarPage from '@/components/pages/CalendarPage';
 
 /* ═══════════════════════════════════════════
    Types & Constants
@@ -64,10 +65,11 @@ interface TimeSlot {
   price: number;
 }
 
-type PageView = 'landing' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy';
+type PageView = 'landing' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy' | 'calendar';
 
 const NAV_LINKS = [
   { label: 'Terrain', href: '#terrains' },
+  { label: 'Calendrier', view: 'calendar' as PageView },
   { label: 'Comment ça marche', view: 'how-it-works' as PageView },
   { label: 'Tarifs', href: '#pricing' },
   { label: 'Concept', view: 'concept' as PageView },
@@ -791,6 +793,9 @@ export default function HomePage() {
   }
   if (view === 'privacy') {
     return <PrivacyPage onBack={handleBackToLanding} />;
+  }
+  if (view === 'calendar') {
+    return <CalendarPage onBack={handleBackToLanding} />;
   }
 
   return (
