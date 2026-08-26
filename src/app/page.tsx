@@ -39,6 +39,7 @@ import {
   User,
   Star,
   Search,
+  Banknote,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -250,7 +251,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | 'cash' | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
@@ -331,7 +332,24 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   }, [selectedSlot, selectedDate, name, phone]);
 
   const handleInitiatePayment = useCallback(async () => {
-    if (!paymentMethod || !paymentPhone || !bookingId) return;
+    if (!paymentMethod || !bookingId) return;
+    if (paymentMethod !== 'cash' && !paymentPhone) return;
+
+    // Cash: skip payment API, confirm directly
+    if (paymentMethod === 'cash') {
+      await fetch(`/api/bookings/${bookingId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentStatus: 'pending',
+          paymentMethod: 'cash',
+          depositPaid: 0,
+        }),
+      });
+      setStep('confirm');
+      return;
+    }
+
     setIsPaying(true);
     try {
       const res = await fetch('/api/payments/initiate', {
@@ -404,16 +422,25 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Méthode de paiement</span>
-                <span className="font-medium">{paymentMethod === 'wave' ? 'Wave' : paymentMethod === 'orange_money' ? 'Orange Money' : '—'}</span>
+                <span className="font-medium">{paymentMethod === 'wave' ? 'Wave' : paymentMethod === 'orange_money' ? 'Orange Money' : paymentMethod === 'cash' ? 'Espèces' : '—'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Acompte</span>
-                <span className="font-medium text-primary">5 000 FCFA</span>
+                <span className="font-medium text-primary">{paymentMethod === 'cash' ? 'Sur place' : '5 000 FCFA'}</span>
               </div>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 w-full max-w-sm mt-1">
-              <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Paiement initié — Vérifiez votre application</p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-500/70 mt-1">Si vous avez effectué le paiement, confirmez ci-dessous.</p>
+            <div className={paymentMethod === 'cash' ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 w-full max-w-sm mt-1' : 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 w-full max-w-sm mt-1'}>
+              {paymentMethod === 'cash' ? (
+                <>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Paiement en espèces sur place</p>
+                  <p className="text-xs text-emerald-600/80 dark:text-emerald-500/70 mt-1">Presentez-vous avec le montant total (25 000 FCFA) à votre arrivée.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Paiement initié — Vérifiez votre application</p>
+                  <p className="text-xs text-amber-600/80 dark:text-amber-500/70 mt-1">Si vous avez effectué le paiement, confirmez ci-dessous.</p>
+                </>
+              )}
             </div>
             <Button
               className="mt-2 w-full max-w-sm bg-primary hover:bg-primary/90"
@@ -425,6 +452,8 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                   Vérification...
                 </span>
+              ) : paymentMethod === 'cash' ? (
+                'Compris'
               ) : (
                 "J'ai payé"
               )}
@@ -547,7 +576,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       {/* Payment Method Selection */}
                       <div className="space-y-3">
                         <Label className="text-sm font-medium">Méthode de paiement</Label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           {/* Wave Card */}
                           <button
                             type="button"
@@ -580,6 +609,27 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                                 />
                               </div>
                             )}
+                          </button>
+
+                          {/* Cash Card */}
+                          <button
+                            type="button"
+                            onClick={() => { setPaymentMethod('cash'); setPaymentPhone(''); }}
+                            className={`relative rounded-xl p-4 text-left transition-all ${
+                              paymentMethod === 'cash'
+                                ? 'ring-2 ring-primary bg-gradient-to-br from-foreground/90 to-foreground'
+                                : 'bg-gradient-to-br from-foreground/80 to-foreground/80 hover:from-foreground/90 hover:to-foreground/90'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center">
+                                <Banknote className="w-5 h-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-white font-bold text-sm">Espèces</p>
+                                <p className="text-white/80 text-xs">Payer sur place</p>
+                              </div>
+                            </div>
                           </button>
 
                           {/* Orange Money Card */}
@@ -660,7 +710,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                   <Button
                     className="w-full text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
                     size="lg"
-                    disabled={!paymentMethod || !paymentPhone || isPaying}
+                    disabled={!paymentMethod || (paymentMethod !== 'cash' && !paymentPhone) || isPaying}
                     onClick={handleInitiatePayment}
                   >
                     {isPaying ? (
@@ -668,12 +718,14 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Traitement...
                       </span>
+                    ) : paymentMethod === 'cash' ? (
+                      'Confirmer la réservation'
                     ) : (
-                      `Payer 5 000 FCFA`
+                      'Payer 5 000 FCFA'
                     )}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
-                    Le solde (20 000 FCFA) se paie sur place
+                    {paymentMethod === 'cash' ? 'Paiement intégral sur place (25 000 FCFA)' : 'Le solde (20 000 FCFA) se paie sur place'}
                   </p>
                   <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
                 </div>
