@@ -40,6 +40,7 @@ import {
   Star,
   Search,
   Banknote,
+  CheckCircle2,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -520,7 +521,10 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           {/* Wave Card */}
                           <button
                             type="button"
-                            onClick={() => { setPaymentMethod('wave'); setPaymentPhone(phone); }}
+                            onClick={() => {
+                              if (paymentMethod === 'wave') { setPaymentMethod(null); setPaymentPhone(''); }
+                              else { setPaymentMethod('wave'); setPaymentPhone(phone); }
+                            }}
                             className={`relative rounded-xl p-4 text-left transition-all ${
                               paymentMethod === 'wave'
                                 ? 'ring-2 ring-green-400 bg-gradient-to-br from-emerald-500 to-emerald-600'
@@ -532,10 +536,11 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                                 <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
                                 <text x="20" y="26" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="sans-serif">W</text>
                               </svg>
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-white font-bold text-sm">Wave</p>
                                 <p className="text-white/80 text-xs">Payer avec Wave</p>
                               </div>
+                              {paymentMethod === 'wave' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
                             </div>
                             {paymentMethod === 'wave' && (
                               <div className="mt-1">
@@ -554,7 +559,10 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           {/* Cash Card */}
                           <button
                             type="button"
-                            onClick={() => { setPaymentMethod('cash'); setPaymentPhone(''); }}
+                            onClick={() => {
+                              if (paymentMethod === 'cash') { setPaymentMethod(null); setPaymentPhone(''); }
+                              else { setPaymentMethod('cash'); setPaymentPhone(''); }
+                            }}
                             className={`relative rounded-xl p-4 text-left transition-all ${
                               paymentMethod === 'cash'
                                 ? 'ring-2 ring-primary bg-gradient-to-br from-foreground/90 to-foreground'
@@ -565,17 +573,21 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                               <div className="w-10 h-10 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center">
                                 <Banknote className="w-5 h-5 text-white" />
                               </div>
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-white font-bold text-sm">Espèces</p>
                                 <p className="text-white/80 text-xs">Payer sur place</p>
                               </div>
+                              {paymentMethod === 'cash' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
                             </div>
                           </button>
 
                           {/* Orange Money Card */}
                           <button
                             type="button"
-                            onClick={() => { setPaymentMethod('orange_money'); setPaymentPhone(phone); }}
+                            onClick={() => {
+                              if (paymentMethod === 'orange_money') { setPaymentMethod(null); setPaymentPhone(''); }
+                              else { setPaymentMethod('orange_money'); setPaymentPhone(phone); }
+                            }}
                             className={`relative rounded-xl p-4 text-left transition-all ${
                               paymentMethod === 'orange_money'
                                 ? 'ring-2 ring-orange-400 bg-gradient-to-br from-orange-500 to-orange-600'
@@ -587,10 +599,11 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                                 <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
                                 <text x="20" y="24" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">OM</text>
                               </svg>
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-white font-bold text-sm">Orange Money</p>
                                 <p className="text-white/80 text-xs">Payer avec Orange Money</p>
                               </div>
+                              {paymentMethod === 'orange_money' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
                             </div>
                             {paymentMethod === 'orange_money' && (
                               <div className="mt-1">
