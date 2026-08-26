@@ -1111,19 +1111,30 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-              {/* Large terrain image */}
-              <div className="lg:col-span-3 relative rounded-2xl overflow-hidden aspect-[16/10]">
-                <Image
-                  src="/terrain.png"
-                  alt={VENUE.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 60vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-medium text-foreground">{VENUE.location}</span>
+              {/* Terrain images — 2 photos stacked */}
+              <div className="lg:col-span-3 space-y-4">
+                <div className="relative rounded-2xl overflow-hidden aspect-[16/10]">
+                  <Image
+                    src="/terrain1.jpg"
+                    alt={`${VENUE.name} — Vue 1`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 60vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-medium text-foreground">{VENUE.location}</span>
+                  </div>
+                </div>
+                <div className="relative rounded-2xl overflow-hidden aspect-[16/10]">
+                  <Image
+                    src="/terrain2.jpg"
+                    alt={`${VENUE.name} — Vue 2`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 60vw"
+                  />
                 </div>
               </div>
 
