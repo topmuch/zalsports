@@ -319,7 +319,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-2xl md:max-w-3xl bg-card border-border max-h-[95vh] overflow-hidden flex flex-col p-0">
         {step === 'confirm' ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 text-center">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
@@ -376,8 +376,8 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               <DialogDescription>{step === 'select' ? 'Choisissez votre date et votre horaire' : step === 'info' ? 'Complétez vos informations' : 'Choisissez votre méthode de paiement'}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full max-h-[60vh]">
-                <div className="p-6 pt-2">
+              <ScrollArea className="h-full">
+                <div className="p-6 pt-2 pb-4">
                   {step === 'select' && (
                     <div className="space-y-6">
                       <div>
@@ -434,11 +434,6 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           )}
                         </div>
                       )}
-                      {selectedSlot && (
-                        <Button className="w-full" size="lg" onClick={() => setStep('info')}>
-                          Continuer <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
                   )}
                   {step === 'info' && (
@@ -466,23 +461,6 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                           <Label htmlFor="phone">Téléphone</Label>
                           <Input id="phone" placeholder="+221 7X XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1.5" />
                         </div>
-                      </div>
-                      <div className="flex gap-3 pt-2">
-                        <Button variant="outline" className="flex-1" onClick={() => setStep('select')}>Retour</Button>
-                        <Button
-                          className="flex-1"
-                          disabled={!name || !phone || isSubmitting}
-                          onClick={handleConfirmInfo}
-                        >
-                          {isSubmitting ? (
-                            <span className="flex items-center gap-2">
-                              <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                              Réservation...
-                            </span>
-                          ) : (
-                            'Confirmer'
-                          )}
-                        </Button>
                       </div>
                     </div>
                   )}
@@ -583,35 +561,61 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                         <p className="text-sm text-muted-foreground">Acompte</p>
                         <p className="text-2xl font-extrabold text-primary">5 000 FCFA</p>
                       </div>
-
-                      {/* Pay Button */}
-                      <Button
-                        className="w-full text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        size="lg"
-                        disabled={!paymentMethod || !paymentPhone || isPaying}
-                        onClick={handleInitiatePayment}
-                      >
-                        {isPaying ? (
-                          <span className="flex items-center gap-2">
-                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Traitement...
-                          </span>
-                        ) : (
-                          `Payer 5 000 FCFA`
-                        )}
-                      </Button>
-
-                      {/* Balance info */}
-                      <p className="text-xs text-center text-muted-foreground">
-                        Le solde (20 000 FCFA) se paie sur place
-                      </p>
-
-                      {/* Back Button */}
-                      <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
                     </div>
                   )}
                 </div>
               </ScrollArea>
+            </div>
+            {/* Sticky action buttons outside scroll */}
+            <div className="shrink-0 border-t border-border p-4 bg-card">
+              {step === 'select' && (
+                <Button className="w-full" size="lg" disabled={!selectedSlot} onClick={() => setStep('info')}>
+                  Continuer <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              )}
+              {step === 'info' && (
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => setStep('select')}>Retour</Button>
+                  <Button
+                    className="flex-1"
+                    size="lg"
+                    disabled={!name || !phone || isSubmitting}
+                    onClick={handleConfirmInfo}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Réservation...
+                      </span>
+                    ) : (
+                      'Confirmer'
+                    )}
+                  </Button>
+                </div>
+              )}
+              {step === 'payment' && (
+                <div className="space-y-3">
+                  <Button
+                    className="w-full text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    size="lg"
+                    disabled={!paymentMethod || !paymentPhone || isPaying}
+                    onClick={handleInitiatePayment}
+                  >
+                    {isPaying ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Traitement...
+                      </span>
+                    ) : (
+                      `Payer 5 000 FCFA`
+                    )}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Le solde (20 000 FCFA) se paie sur place
+                  </p>
+                  <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -691,12 +695,8 @@ export default function HomePage() {
         }`}
       >
         <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3 group">
+          <a href="#" className="flex items-center group">
             <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[96px] h-auto" />
-            <span className={`text-2xl font-bold tracking-tight transition-colors ${scrolled ? '' : 'text-white'}`}>
-              <span className={scrolled ? 'text-primary' : 'text-green-400'}>Zal</span>
-              <span className={scrolled ? 'text-foreground' : 'text-white'}>Foot</span>
-            </span>
           </a>
 
           <div className="hidden md:flex items-center gap-5">
