@@ -21,6 +21,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL=file:/app/data/zalsports.db
 RUN bun run build
 
+# Copy public folder for standalone output
+RUN cp -r public .next/standalone/public
+
 # Create data directory
 RUN mkdir -p /app/data
 
