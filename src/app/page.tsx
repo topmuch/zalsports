@@ -27,7 +27,7 @@ import {
   ArrowRight,
   Menu,
   X,
-  LayoutDashboard,
+  LogIn,
   CreditCard,
   User,
 } from 'lucide-react';
@@ -739,8 +739,8 @@ export default function HomePage() {
               onClick={() => navigateTo('dashboard')}
               className={`text-sm transition-colors flex items-center gap-1.5 ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
             >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              Dashboard
+              <LogIn className="w-3.5 h-3.5" />
+              Connexion
             </button>
             <Button size="sm" className="glow-green" onClick={() => setBookingOpen(true)}>
               <Zap className="w-4 h-4 mr-1.5" />
@@ -799,7 +799,7 @@ export default function HomePage() {
                   onClick={() => navigateTo('dashboard')}
                   className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
                 >
-                  <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
+                  <LogIn className="w-3.5 h-3.5" /> Connexion
                 </button>
                 <Button className="w-full glow-green" onClick={() => { setMobileMenuOpen(false); setBookingOpen(true); }}>
                   <Zap className="w-4 h-4 mr-1.5" /> Réserver
