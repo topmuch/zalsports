@@ -104,12 +104,14 @@ export default function ConceptPage({ onBack }: { onBack: () => void }) {
               Notre plateforme permet à n\'importe quel joueur de réserver un terrain de qualité en quelques secondes, depuis son téléphone, avec une confirmation immédiate. C\'est aussi simple que commander un repas.
             </p>
           </div>
-          <div className="relative rounded-2xl overflow-hidden aspect-[4/3]">
-            <Image src="/terrain.png" alt="Terrain ZalFoot" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-background/70 backdrop-blur-sm rounded-lg px-3 py-1.5">
-              <MapPin className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium">Croisement Kaolack - Mbour, Sénégal</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative rounded-2xl overflow-hidden aspect-[3/4]">
+              <Image src="/concept1.jpg" alt="Terrain ZalFoot — Vue 1" fill className="object-cover" sizes="(max-width: 1024px) 50vw, 25vw" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+            <div className="relative rounded-2xl overflow-hidden aspect-[3/4]">
+              <Image src="/concept2.jpg" alt="Terrain ZalFoot — Vue 2" fill className="object-cover" sizes="(max-width: 1024px) 50vw, 25vw" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </div>
           </div>
         </div>

@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/with-auth';
+
+// In-memory settings store
+const settingsStore = new Map<string, string>([
+  ['site_name', 'ZalFoot'],
+  ['site_phone', '+221 77 000 00 00'],
+  ['site_email', 'contact@zalfoot.sn'],
+  ['site_address', 'Dakar, Sénégal'],
+  ['currency', 'FCFA'],
+  ['slot_price', '25000'],
+  ['opening_hour', '08:00'],
+  ['closing_hour', '23:00'],
+]);
 
 // GET /api/admin/settings — returns all settings as a key-value object
 const getHandler = async () => {
   try {
-    const settings = await prisma.siteSettings.findMany();
     const kv: Record<string, string> = {};
-    for (const s of settings) {
-      kv[s.key] = s.value;
+    for (const [key, value] of settingsStore) {
+      kv[key] = value;
     }
     return NextResponse.json(kv);
   } catch (error) {
@@ -18,7 +28,6 @@ const getHandler = async () => {
 };
 
 // PUT /api/admin/settings — batch update settings
-// Body: { site_name: '...', site_phone: '...', ... }
 const putHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
@@ -31,22 +40,14 @@ const putHandler = async (request: NextRequest) => {
     }
 
     const entries = Object.entries(body) as [string, string][];
-
-    await prisma.$transaction(
-      entries.map(([key, value]) =>
-        prisma.siteSettings.upsert({
-          where: { key },
-          update: { value },
-          create: { key, value },
-        })
-      )
-    );
+    for (const [key, value] of entries) {
+      settingsStore.set(key, String(value));
+    }
 
     // Return updated settings
-    const settings = await prisma.siteSettings.findMany();
     const kv: Record<string, string> = {};
-    for (const s of settings) {
-      kv[s.key] = s.value;
+    for (const [key, value] of settingsStore) {
+      kv[key] = value;
     }
     return NextResponse.json(kv);
   } catch (error) {

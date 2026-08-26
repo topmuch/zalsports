@@ -343,6 +343,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          status: 'confirmed',
           paymentStatus: 'pending',
           paymentMethod: 'cash',
           depositPaid: 0,
@@ -386,6 +387,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          status: 'confirmed',
           paymentStatus: 'partial',
           paymentMethod,
           depositPaid: 5000,

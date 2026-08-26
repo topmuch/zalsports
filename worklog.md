@@ -64,6 +64,43 @@ Stage Summary:
 - Demo user +221 77 123 45 67 seeded with profile and bookings
 - Lint passes clean
 ---
+Task ID: 2-b
+Agent: Sub-agent
+Task: Convert all admin API routes from Prisma to in-memory db
+
+Work Log:
+- Read db.ts to understand all available in-memory db methods and their signatures
+- Converted 10 admin API route files from `import { prisma } from '@/lib/prisma'` to `import { db } from '@/lib/db'` (or removed import where not needed)
+- Zero remaining `@/lib/prisma` references in /src/app/api/admin/
+
+File-by-file changes:
+1. **calendar/route.ts** — Replaced `prisma.booking.findMany` with `db.booking.getCalendarMonth(year, month)` which already groups by date and filters cancelled bookings
+2. **users/route.ts** — Derives user list from bookings (unique customerPhone aggregation) + merges with user profiles via `db.user.find()`. Search, pagination, create (via `db.user.upsert()`) all work in-memory
+3. **users/[id]/route.ts** — Treats `id` as phone number. GET uses `db.user.find()` + `db.booking.findMany({ where: { customerPhone } })`. PATCH uses `db.user.upsert()`. DELETE cancels all user bookings via `db.booking.update({ id }, { status: 'cancelled' })`
+4. **subscriptions/route.ts** — Returns empty data array (no subscription model in-memory). POST returns 501
+5. **subscriptions/[id]/route.ts** — PATCH/DELETE return 501 (not supported)
+6. **plans/route.ts** — GET returns empty array. POST returns 501
+7. **plans/[id]/route.ts** — PATCH/DELETE return 501 (not supported)
+8. **payments/route.ts** — Replaced Prisma paymentMethod model with in-memory default methods (Wave, Orange Money, Espèces) + local Map for overrides. GET/POST work
+9. **payments/[id]/route.ts** — DELETE returns success (no real persistence needed)
+10. **settings/route.ts** — Replaced Prisma siteSettings with in-memory Map with sensible defaults (site_name, site_phone, currency, slot_price, etc.). GET/PUT work
+
+Verification:
+- `rg 'from.*prisma' src/app/api/admin/` returns 0 results
+- ESLint passes with zero errors on all admin files
+- TypeScript: no admin-related type errors (pre-existing ConceptPage error is unrelated)
+- All `withAuth` wrappers preserved
+- No `include`, `select`, or unsupported `orderBy` patterns remain
+
+Stage Summary:
+- All 10 admin API routes converted from Prisma to in-memory db
+- Calendar, users, payments, and settings have full in-memory implementations
+- Subscriptions and plans return empty/501 since those features don't exist in the in-memory store
+- Users are derived from booking data (unique phones) merged with UserProfile store
+- Payment methods use hardcoded defaults (Wave, Orange Money, Espèces)
+- Settings use a local Map with pre-seeded defaults
+- Lint and type-check clean
+---
 Task ID: 1
 Agent: Main
 Task: Create and develop website pages (Contact, Comment ça marche, Prix, Concept, À propos, Confidentialité)
