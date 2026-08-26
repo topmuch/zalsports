@@ -17,6 +17,13 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   MapPin,
   Clock,
   Users,
@@ -30,6 +37,8 @@ import {
   LogIn,
   CreditCard,
   User,
+  Star,
+  Search,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -70,10 +79,18 @@ const FOOTER_LINKS = [
   { label: 'À propos', view: 'about' as PageView },
 ];
 
-const STATS = [
+const HERO_STATS = [
+  { label: '1 Terrain', icon: MapPin },
+  { label: '14 Joueurs max', icon: Users },
+  { label: '08:00–00:00', icon: Clock },
+  { label: 'Wave & Orange Money', icon: CreditCard },
+];
+
+const BANNER_STATS = [
   { value: 1250, suffix: '+', label: 'Matchs joués' },
   { value: 98, suffix: '%', label: 'Satisfaction' },
   { value: 14, suffix: '', label: 'Joueurs max' },
+  { value: 7, suffix: 'j/7', label: 'Disponible' },
 ];
 
 const STEPS = [
@@ -94,6 +111,51 @@ const STEPS = [
     number: '03',
     title: 'Payez l\'acompte',
     description: 'Acompte en ligne via Wave ou Orange Money. Le solde sur place.',
+  },
+];
+
+const FEATURES = [
+  {
+    icon: Clock,
+    title: 'Réservation rapide',
+    description: 'Réservez votre créneau en 30 secondes, sans créer de compte.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Paiement sécurisé',
+    description: 'Payez votre acompte en toute sécurité via Wave ou Orange Money.',
+  },
+  {
+    icon: MapPin,
+    title: 'Terrain de qualité',
+    description: 'Synthétique dernière génération, éclairage LED, vestiaires modernes.',
+  },
+  {
+    icon: CalendarDays,
+    title: 'Disponible 7j/7',
+    description: 'Ouvert tous les jours de 08h à 00h pour votre plaisir.',
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    name: 'Mamadou Diop',
+    role: 'Capitaine – Équipe Diarama',
+    rating: 5,
+    quote: 'La réservation est super simple, même mon père pourrait le faire. Le terrain est impeccable et l\'éclairage top.',
+  },
+  {
+    name: 'Ibrahima Fall',
+    role: 'Joueur régulier',
+    rating: 5,
+    quote: 'Le paiement par Wave est très pratique. Plus besoin de chercher du liquide. J\'utilise ZalFoot chaque semaine.',
+  },
+  {
+    name: 'Aminata Sow',
+    role: 'Organisatrice de tournois',
+    title: 'Organisatrice',
+    rating: 5,
+    quote: 'La qualité du terrain synthétique est au-dessus de ce qu\'on trouve ailleurs. Les vestiaires sont propres et modernes.',
   },
 ];
 
@@ -651,95 +713,76 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const statsRef = useRef<HTMLDivElement>(null);
-  const statsInView = useInView(statsRef, { once: true });
+  const bannerStatsRef = useRef<HTMLDivElement>(null);
+  const bannerStatsInView = useInView(bannerStatsRef, { once: true });
 
   if (view === 'dashboard') {
     return <Dashboard onBack={handleBackToLanding} />;
   }
-
   if (view === 'user') {
     return <UserPanel onBack={handleBackToLanding} />;
   }
-
   if (view === 'contact') {
     return <ContactPage onBack={handleBackToLanding} />;
   }
-
   if (view === 'how-it-works') {
     return <HowItWorksPage onBack={handleBackToLanding} />;
   }
-
   if (view === 'pricing') {
     return <PricingPage onBack={handleBackToLanding} onBook={() => { setView('landing'); setTimeout(() => setBookingOpen(true), 100); }} />;
   }
-
   if (view === 'concept') {
     return <ConceptPage onBack={handleBackToLanding} />;
   }
-
   if (view === 'about') {
     return <AboutPage onBack={handleBackToLanding} />;
   }
-
   if (view === 'privacy') {
     return <PrivacyPage onBack={handleBackToLanding} />;
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* ─── Navbar ─── */}
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* ═══════ 1. NAVBAR ═══════ */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-border shadow-sm' : 'bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 h-20 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/95 backdrop-blur-xl shadow-sm'
+            : 'bg-white/95 backdrop-blur-xl'
         }`}
       >
-        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
-          <a href="#" className="flex items-center group">
-            <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[96px] h-auto" />
+        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          {/* Logo only – no text */}
+          <a href="#" className="flex items-center" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[72px] h-[72px] sm:w-[96px] sm:h-[96px]" />
           </a>
 
-          <div className="hidden md:flex items-center gap-5">
-            {NAV_LINKS.map((link) => (
+          {/* Desktop nav */}
+          <div className="hidden lg:flex items-center gap-6">
+            {NAV_LINKS.map((link) =>
               'view' in link && link.view ? (
                 <button
                   key={link.label}
                   onClick={() => navigateTo(link.view!)}
-                  className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'}`}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {link.label}
                 </button>
               ) : (
-                <a key={link.label} href={(link as { href: string }).href} className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-foreground' : 'text-white/80 hover:text-white'}`}>
+                <a
+                  key={link.label}
+                  href={(link as { href: string }).href}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   {link.label}
                 </a>
-              )
-            ))}
-            <div className={`w-px h-4 ${scrolled ? 'bg-border' : 'bg-white/20'}`} />
-            <button
-              onClick={() => navigateTo('about')}
-              className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
-            >
-              À propos
-            </button>
-            <button
-              onClick={() => navigateTo('contact')}
-              className={`text-sm transition-colors ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
-            >
-              Contact
-            </button>
-            <button
-              onClick={() => navigateTo('user')}
-              className={`text-sm transition-colors flex items-center gap-1.5 ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
-            >
-              <User className="w-3.5 h-3.5" />
-              Mon espace
-            </button>
+              ),
+            )}
             <button
               onClick={() => navigateTo('dashboard')}
-              className={`text-sm transition-colors flex items-center gap-1.5 ${scrolled ? 'text-muted-foreground hover:text-primary' : 'text-white/80 hover:text-white'}`}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
-              <LogIn className="w-3.5 h-3.5" />
+              <LogIn className="w-4 h-4" />
               Connexion
             </button>
             <Button size="sm" className="glow-green" onClick={() => setBookingOpen(true)}>
@@ -748,60 +791,66 @@ export default function HomePage() {
             </Button>
           </div>
 
-          <button className={`md:hidden p-2 ${scrolled ? 'text-foreground' : 'text-white'}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {/* Mobile hamburger */}
+          <button
+            className="lg:hidden p-2 text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </nav>
 
+        {/* Mobile menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border overflow-hidden"
+              className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-border overflow-hidden"
             >
-              <div className="px-4 py-4 space-y-3">
-                {NAV_LINKS.map((link) => (
+              <div className="px-4 py-4 space-y-1">
+                {NAV_LINKS.map((link) =>
                   'view' in link && link.view ? (
                     <button
                       key={link.label}
                       onClick={() => navigateTo(link.view!)}
-                      className="block py-2 text-sm text-muted-foreground hover:text-foreground"
+                      className="block w-full text-left py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {link.label}
                     </button>
                   ) : (
-                    <a key={link.label} href={(link as { href: string }).href} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">
+                    <a
+                      key={link.label}
+                      href={(link as { href: string }).href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block w-full text-left py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
                       {link.label}
                     </a>
-                  )
-                ))}
-                <button
-                  onClick={() => navigateTo('about')}
-                  className="block py-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  À propos
-                </button>
-                <button
-                  onClick={() => navigateTo('contact')}
-                  className="block py-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Contact
-                </button>
+                  ),
+                )}
+                <div className="border-t border-border my-2" />
                 <button
                   onClick={() => navigateTo('user')}
-                  className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
+                  className="flex items-center gap-1.5 w-full text-left py-3 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <User className="w-3.5 h-3.5" /> Mon espace
+                  <User className="w-4 h-4" /> Mon espace
                 </button>
                 <button
                   onClick={() => navigateTo('dashboard')}
-                  className="flex items-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-primary"
+                  className="flex items-center gap-1.5 w-full text-left py-3 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <LogIn className="w-3.5 h-3.5" /> Connexion
+                  <LogIn className="w-4 h-4" /> Connexion
                 </button>
-                <Button className="w-full glow-green" onClick={() => { setMobileMenuOpen(false); setBookingOpen(true); }}>
+                <Button
+                  className="w-full glow-green mt-2"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setBookingOpen(true);
+                  }}
+                >
                   <Zap className="w-4 h-4 mr-1.5" /> Réserver
                 </Button>
               </div>
@@ -810,103 +859,213 @@ export default function HomePage() {
         </AnimatePresence>
       </header>
 
-      <main className="flex-1">
-        {/* ─── Hero ─── */}
-        <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0">
-            <Image src="/hero-bg.png" alt="Terrain de football" fill className="object-cover" priority quality={85} />
-            <div className="hero-overlay absolute inset-0" />
-          </div>
-          <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center pt-20">
-            <Badge className="mb-6 px-4 py-1.5 text-sm bg-white/15 text-white border border-white/20 backdrop-blur-sm">
-              <MapPin className="w-3.5 h-3.5 mr-1.5" />
-              CROISEMENT KAOLACK - MBOUR · SÉNÉGAL
-            </Badge>
-            <motion.h1
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-            >
-              Le match
-              <br />
-              <span className="text-green-400">commence ici.</span>
-            </motion.h1>
-            <motion.p
-              className="mt-6 text-lg sm:text-xl text-white/80 max-w-xl mx-auto leading-relaxed"
+      {/* ═══════ MAIN CONTENT ═══════ */}
+      <main className="flex-1 pt-20">
+
+        {/* ═══════ 2. HERO SECTION (white bg, top) ═══════ */}
+        <section className="bg-white">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center">
+            {/* Badge */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
+              transition={{ duration: 0.5 }}
             >
-              Réservez votre terrain en 30 secondes. Aucun compte requis.
+              <Badge variant="outline" className="mb-6 px-4 py-1.5 text-sm font-medium border-primary/30 text-primary bg-primary/5">
+                ⚽ Football · Sénégal
+              </Badge>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.15] text-foreground max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              Réservez votre terrain de football{' '}
+              <span className="text-primary">en 30 secondes</span>
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Terrain synthétique, éclairage LED, vestiaires. Aucun compte requis.
             </motion.p>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.5 }} className="mt-10">
-              <Button size="lg" className="text-lg px-8 py-6 glow-green" onClick={() => setBookingOpen(true)}>
-                <Zap className="w-5 h-5 mr-2" /> Réserver maintenant
+
+            {/* 2 CTAs */}
+            <motion.div
+              className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Button size="lg" className="text-base px-8 glow-green" onClick={() => setBookingOpen(true)}>
+                <Zap className="w-4 h-4 mr-2" />
+                Réserver maintenant
+              </Button>
+              <Button size="lg" variant="outline" className="text-base px-8" onClick={() => navigateTo('how-it-works')}>
+                Comment ça marche
               </Button>
             </motion.div>
+
+            {/* Stats row */}
             <motion.div
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 bounce-down"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
+              className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <ChevronDown className="w-6 h-6 text-white/60" />
+              {HERO_STATS.map((stat, i) => (
+                <div key={stat.label} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <stat.icon className="w-4 h-4 text-primary" />
+                  <span>{stat.label}</span>
+                  {i < HERO_STATS.length - 1 && (
+                    <span className="hidden sm:inline text-border mx-1">|</span>
+                  )}
+                </div>
+              ))}
+            </motion.div>
+
+            {/* City tag pill */}
+            <motion.div
+              className="mt-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+            >
+              <Badge variant="secondary" className="px-4 py-2 text-sm font-normal gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                Croisement Kaolack - Mbour
+              </Badge>
             </motion.div>
           </div>
         </section>
 
-        {/* ─── Stats ─── */}
-        <section ref={statsRef} className="relative z-10 -mt-12 sm:-mt-16">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              {STATS.map((stat, i) => (
+        {/* ═══════ 3. QUICK SEARCH BAR ═══════ */}
+        <section className="bg-white pb-16 sm:pb-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              className="bg-white rounded-2xl shadow-lg shadow-black/[0.06] border border-border p-5 sm:p-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                {/* Sport select */}
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Sport</Label>
+                  <Select defaultValue="football">
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="football">Football</SelectItem>
+                      <SelectItem value="basketball">Basketball</SelectItem>
+                      <SelectItem value="futsal">Futsal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date</Label>
+                  <Input
+                    type="date"
+                    defaultValue={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+                    min={format(new Date(), 'yyyy-MM-dd')}
+                  />
+                </div>
+
+                {/* Heure */}
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Heure</Label>
+                  <Select defaultValue="18:00">
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 15 }, (_, i) => i + 8).map((h) => (
+                        <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
+                          {h.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Search button */}
+                <Button className="w-full sm:w-auto" size="lg" onClick={() => setBookingOpen(true)}>
+                  <Search className="w-4 h-4 mr-2" />
+                  Rechercher
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ═══════ 4. STATS BANNER (green bg) ═══════ */}
+        <section ref={bannerStatsRef} className="bg-primary">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-6">
+              {BANNER_STATS.map((stat, i) => (
                 <motion.div
                   key={stat.label}
-                  className="bg-card/80 backdrop-blur-lg border border-border rounded-2xl p-4 sm:p-6 text-center"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={statsInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: i * 0.15 }}
+                  className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={bannerStatsInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.5, delay: i * 0.12 }}
                 >
-                  <div className="text-2xl sm:text-4xl font-extrabold text-primary">
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} inView={statsInView} />
-                  </div>
-                  <div className="mt-1 text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                  <p className="text-3xl sm:text-4xl font-extrabold text-primary-foreground">
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} inView={bannerStatsInView} />
+                  </p>
+                  <p className="mt-1.5 text-sm text-primary-foreground/80 font-medium">
                     {stat.label}
-                  </div>
+                  </p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── How It Works ─── */}
-        <Section id="steps" className="py-20 sm:py-28">
+        {/* ═══════ 5. HOW IT WORKS ═══════ */}
+        <Section className="py-16 sm:py-24">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Simple & rapide</p>
-              <h2 className="text-2xl sm:text-3xl font-bold">Comment ça marche</h2>
-              <button onClick={() => navigateTo('how-it-works')} className="mt-3 text-sm text-primary hover:underline inline-flex items-center gap-1">
-                En savoir plus <ArrowRight className="w-3 h-3" />
-              </button>
+            <div className="text-center mb-12 sm:mb-14">
+              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
+                Simple & rapide
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Comment ça marche ?
+              </h2>
+              <p className="mt-3 text-muted-foreground max-w-md mx-auto">
+                En 3 étapes simples, réservez votre créneau.
+              </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
               {STEPS.map((s, i) => (
                 <motion.div
                   key={s.number}
-                  className="step-card bg-card rounded-2xl p-6 sm:p-8"
+                  className="step-card bg-white rounded-2xl p-6 sm:p-8 relative"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-60px' }}
                   transition={{ duration: 0.5, delay: i * 0.15 }}
                 >
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <s.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="text-3xl font-black text-primary/10">{s.number}</span>
+                  {/* Step number badge */}
+                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold mb-4">
+                    {s.number}
                   </div>
-                  <h3 className="text-lg font-bold mb-2">{s.title}</h3>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <s.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 text-foreground">{s.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{s.description}</p>
                 </motion.div>
               ))}
@@ -914,82 +1073,123 @@ export default function HomePage() {
           </div>
         </Section>
 
-        {/* ─── Venue Section ─── */}
-        <Section id="terrains" className="py-20 sm:py-28 bg-secondary/30">
+        {/* ═══════ 6. FEATURES / ADVANTAGES ═══════ */}
+        <Section className="py-16 sm:py-24 bg-secondary/40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Le terrain</p>
-              <h2 className="text-2xl sm:text-3xl font-bold">{VENUE.name}</h2>
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Pourquoi ZalFoot Arena ?
+              </h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="relative rounded-2xl overflow-hidden aspect-video">
-                <Image src="/terrain.png" alt={VENUE.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-background/70 backdrop-blur-sm rounded-lg px-3 py-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {FEATURES.map((f, i) => (
+                <motion.div
+                  key={f.title}
+                  className="bg-white rounded-2xl p-6 sm:p-8 border border-border/60"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                >
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <f.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2 text-foreground">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* ═══════ 7. VENUE SECTION ═══════ */}
+        <Section id="terrains" className="py-16 sm:py-24">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{VENUE.name}</h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+              {/* Large terrain image */}
+              <div className="lg:col-span-3 relative rounded-2xl overflow-hidden aspect-[16/10]">
+                <Image
+                  src="/terrain.png"
+                  alt={VENUE.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-medium">{VENUE.location}</span>
+                  <span className="text-xs font-medium text-foreground">{VENUE.location}</span>
                 </div>
               </div>
 
-              <div className="space-y-5">
-                <p className="text-muted-foreground leading-relaxed">{VENUE.description}</p>
-                <div className="grid grid-cols-2 gap-3">
+              {/* Venue info card */}
+              <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6 space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">{VENUE.description}</p>
+                <div className="space-y-3">
                   {[
+                    { label: 'Emplacement', value: VENUE.location, icon: MapPin },
                     { label: 'Prix / heure', value: VENUE.pricePerHour, icon: CreditCard },
-                    { label: 'Acompte', value: VENUE.deposit, icon: ShieldCheck },
                     { label: 'Capacité', value: VENUE.capacity, icon: Users },
                     { label: 'Horaires', value: VENUE.hours, icon: Clock },
                   ].map((item) => (
-                    <div key={item.label} className="bg-card rounded-xl p-4 border border-border">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">{item.label}</p>
-                      <div className="flex items-center gap-2">
+                    <div key={item.label} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <item.icon className="w-4 h-4 text-primary" />
-                        <p className="text-base font-bold">{item.value}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{item.label}</p>
+                        <p className="text-sm font-semibold text-foreground mt-0.5">{item.value}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <Button size="lg" className="w-full glow-green" onClick={() => setBookingOpen(true)}>
-                  Voir les créneaux <ArrowRight className="ml-2 w-4 h-4" />
+                <Button size="lg" className="w-full glow-green mt-2" onClick={() => setBookingOpen(true)}>
+                  Voir les créneaux
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </div>
             </div>
           </div>
         </Section>
 
-        {/* ─── Pricing ─── */}
-        <Section id="pricing" className="py-20 sm:py-28">
+        {/* ═══════ 8. PRICING SECTION ═══════ */}
+        <Section id="pricing" className="py-16 sm:py-24 bg-secondary/40">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">Tarifs transparents</p>
-              <h2 className="text-2xl sm:text-3xl font-bold">Un prix, pas de surprise</h2>
-              <button onClick={() => navigateTo('pricing')} className="mt-3 text-sm text-primary hover:underline inline-flex items-center gap-1">
-                Voir tous les tarifs <ArrowRight className="w-3 h-3" />
-              </button>
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Un prix, pas de surprise</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {/* Full price card */}
               <motion.div
-                className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center"
+                className="bg-white rounded-2xl border border-border p-6 sm:p-8 text-center"
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                initial={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.5 }}
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Clock className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">1 heure</h3>
+                <h3 className="text-lg font-bold mb-2 text-foreground">1 heure</h3>
                 <p className="text-3xl font-extrabold text-primary">
                   25 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">Jusqu&rsquo;à 14 joueurs</p>
               </motion.div>
+
+              {/* Deposit card */}
               <motion.div
-                className="bg-card border border-primary/30 rounded-2xl p-6 sm:p-8 text-center relative overflow-hidden"
+                className="bg-white rounded-2xl border-2 border-primary/40 p-6 sm:p-8 text-center relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                initial={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
               >
                 <div className="absolute top-3 right-3">
                   <Badge className="bg-primary text-primary-foreground text-xs">Populaire</Badge>
@@ -997,7 +1197,7 @@ export default function HomePage() {
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">Acompte</h3>
+                <h3 className="text-lg font-bold mb-2 text-foreground">Acompte</h3>
                 <p className="text-3xl font-extrabold text-primary">
                   5 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
                 </p>
@@ -1007,33 +1207,81 @@ export default function HomePage() {
           </div>
         </Section>
 
-        {/* ─── CTA ─── */}
-        <Section className="py-20 sm:py-28 bg-secondary/30">
+        {/* ═══════ 9. TESTIMONIALS ═══════ */}
+        <Section className="py-16 sm:py-24">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                ★ Ils nous font confiance
+              </h2>
+              <p className="mt-3 text-muted-foreground">Joueurs satisfaits</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+              {TESTIMONIALS.map((t, i) => (
+                <motion.div
+                  key={t.name}
+                  className="bg-white rounded-2xl border border-border p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.5, delay: i * 0.12 }}
+                >
+                  {/* Stars */}
+                  <div className="flex gap-0.5 mb-4">
+                    {Array.from({ length: t.rating }).map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <blockquote className="text-sm text-muted-foreground leading-relaxed mb-5">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t.role}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* ═══════ 10. CTA SECTION ═══════ */}
+        <Section className="py-16 sm:py-24 bg-secondary/40">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Prêt à jouer ?</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+              Prêt à jouer ?
+            </h2>
             <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-md mx-auto">
-              Sélectionnez votre créneau — seul votre numéro suffit.
+              Réservez votre créneau dès maintenant
             </p>
-            <Button size="lg" className="text-lg px-10 py-6 glow-green" onClick={() => setBookingOpen(true)}>
-              <Zap className="w-5 h-5 mr-2" /> Réserver maintenant
+            <Button size="lg" className="text-base px-10 py-6 glow-green" onClick={() => setBookingOpen(true)}>
+              <Zap className="w-5 h-5 mr-2" />
+              Réserver maintenant
             </Button>
           </div>
         </Section>
       </main>
 
-      {/* ─── Footer ─── */}
-      <footer className="border-t border-border py-8 mt-auto">
+      {/* ═══════ 11. FOOTER (sticky, mt-auto) ═══════ */}
+      <footer className="border-t border-border py-8 mt-auto bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="ZalFoot" width={72} height={72} className="rounded-lg w-[72px] h-auto" />
-            <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>
+            <Image src="/logo.png" alt="ZalFoot" width={72} height={72} className="rounded-lg w-[56px] h-[56px] sm:w-[72px] sm:h-[72px]" />
+            <span className="text-sm font-semibold text-foreground">
+              <span className="text-primary">Zal</span>Foot
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Sénégal
           </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
             {FOOTER_LINKS.map((link) => (
-              <button key={link.label} onClick={() => navigateTo(link.view)} className="hover:text-foreground transition-colors">
+              <button
+                key={link.label}
+                onClick={() => navigateTo(link.view)}
+                className="hover:text-foreground transition-colors"
+              >
                 {link.label}
               </button>
             ))}
