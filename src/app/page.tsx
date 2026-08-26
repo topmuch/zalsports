@@ -257,7 +257,6 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [paymentPhone, setPaymentPhone] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
-  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   const fetchSlots = useCallback(async (date: Date) => {
     setLoadingSlots(true);
@@ -294,7 +293,6 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       setPaymentPhone('');
       setBookingId(null);
       setIsPaying(false);
-      setConfirmingPayment(false);
       fetchSlots(tomorrow);
     }
   }, [open, fetchSlots]);
@@ -337,69 +335,27 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     if (!paymentMethod || !bookingId) return;
     if (paymentMethod !== 'cash' && !paymentPhone) return;
 
-    // Cash: skip payment API, confirm directly
-    if (paymentMethod === 'cash') {
+    setIsPaying(true);
+    try {
+      // For all methods: directly confirm the booking with payment info
+      // In production, Wave/OM would redirect to a real payment gateway
       await fetch(`/api/bookings/${bookingId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'confirmed',
-          paymentStatus: 'pending',
-          paymentMethod: 'cash',
-          depositPaid: 0,
+          paymentStatus: paymentMethod === 'cash' ? 'pending' : 'partial',
+          paymentMethod,
+          depositPaid: paymentMethod === 'cash' ? 0 : 5000,
         }),
       });
       setStep('confirm');
-      return;
-    }
-
-    setIsPaying(true);
-    try {
-      const res = await fetch('/api/payments/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId,
-          method: paymentMethod,
-          phone: paymentPhone,
-          amount: 5000,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.paymentUrl) {
-          window.open(data.paymentUrl, '_blank');
-        }
-        setStep('confirm');
-      }
     } catch {
       // silent
     } finally {
       setIsPaying(false);
     }
   }, [paymentMethod, paymentPhone, bookingId]);
-
-  const handleConfirmPaid = useCallback(async () => {
-    if (!bookingId || !paymentMethod) return;
-    setConfirmingPayment(true);
-    try {
-      await fetch(`/api/bookings/${bookingId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'confirmed',
-          paymentStatus: 'partial',
-          paymentMethod,
-          depositPaid: 5000,
-        }),
-      });
-      setStep('confirm');
-    } catch {
-      // silent
-    } finally {
-      setConfirmingPayment(false);
-    }
-  }, [bookingId, paymentMethod]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -433,36 +389,16 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                 <span className="font-medium text-primary">{paymentMethod === 'cash' ? 'Sur place' : '5 000 FCFA'}</span>
               </div>
             </div>
-            <div className={paymentMethod === 'cash' ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 w-full max-w-sm mt-1' : 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 w-full max-w-sm mt-1'}>
-              {paymentMethod === 'cash' ? (
-                <>
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Paiement en espèces sur place</p>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-500/70 mt-1">Presentez-vous avec le montant total (25 000 FCFA) à votre arrivée.</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Paiement initié — Vérifiez votre application</p>
-                  <p className="text-xs text-amber-600/80 dark:text-amber-500/70 mt-1">Si vous avez effectué le paiement, confirmez ci-dessous.</p>
-                </>
-              )}
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 w-full max-w-sm mt-1">
+              <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Réservation confirmée</p>
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-500/70 mt-1">{paymentMethod === 'cash' ? 'Presentez-vous avec le montant total (25 000 FCFA) à votre arrivée.' : `Acompte de 5 000 FCFA via ${paymentMethod === 'wave' ? 'Wave' : 'Orange Money'}. Le solde (20 000 FCFA) se paie sur place.`}</p>
             </div>
             <Button
               className="mt-2 w-full max-w-sm bg-primary hover:bg-primary/90"
-              disabled={confirmingPayment}
-              onClick={handleConfirmPaid}
+              onClick={() => onOpenChange(false)}
             >
-              {confirmingPayment ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Vérification...
-                </span>
-              ) : paymentMethod === 'cash' ? (
-                'Compris'
-              ) : (
-                "J'ai payé"
-              )}
+              Fermer
             </Button>
-            <Button variant="outline" className="w-full max-w-sm" onClick={() => onOpenChange(false)}>Fermer</Button>
           </div>
         ) : (
           <>

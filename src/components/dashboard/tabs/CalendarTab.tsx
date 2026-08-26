@@ -131,7 +131,7 @@ export default function CalendarTab() {
       );
       if (res.ok) {
         const data = await res.json();
-        setDayBookings(data.bookings || {});
+        setDayBookings(data.data || data.bookings || {});
       } else {
         // Prisma tables might not exist — show empty
         setDayBookings({});
