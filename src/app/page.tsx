@@ -808,7 +808,7 @@ export default function HomePage() {
             : 'bg-white/95 backdrop-blur-xl'
         }`}
       >
-        <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Logo only – no text */}
           <a href="#" className="flex items-center" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[72px] h-[72px] sm:w-[96px] sm:h-[96px]" />
@@ -921,7 +921,7 @@ export default function HomePage() {
 
         {/* ═══════ 2. HERO SECTION (white bg, top) ═══════ */}
         <section className="bg-white">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center">
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1005,7 +1005,7 @@ export default function HomePage() {
 
         {/* ═══════ 3. QUICK SEARCH BAR ═══════ */}
         <section className="bg-white pb-16 sm:pb-20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="bg-white rounded-2xl shadow-lg shadow-black/[0.06] border border-border p-5 sm:p-6"
               initial={{ opacity: 0, y: 20 }}
@@ -1068,7 +1068,7 @@ export default function HomePage() {
 
         {/* ═══════ 4. STATS BANNER (green bg) ═══════ */}
         <section ref={bannerStatsRef} className="bg-primary">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-6">
               {BANNER_STATS.map((stat, i) => (
                 <motion.div
@@ -1092,7 +1092,7 @@ export default function HomePage() {
 
         {/* ═══════ 5. HOW IT WORKS ═══════ */}
         <Section className="py-16 sm:py-24">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-14">
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
                 Simple & rapide
@@ -1132,7 +1132,7 @@ export default function HomePage() {
 
         {/* ═══════ 6. FEATURES / ADVANTAGES ═══════ */}
         <Section className="py-16 sm:py-24 bg-secondary/40">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-14">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                 Pourquoi ZalFoot Arena ?
@@ -1162,7 +1162,7 @@ export default function HomePage() {
 
         {/* ═══════ 7. VENUE SECTION ═══════ */}
         <Section id="terrains" className="py-16 sm:py-24">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-14">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{VENUE.name}</h2>
             </div>
@@ -1227,7 +1227,7 @@ export default function HomePage() {
 
         {/* ═══════ 8. PRICING SECTION ═══════ */}
         <Section id="pricing" className="py-16 sm:py-24 bg-secondary/40">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-14">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Un prix, pas de surprise</h2>
             </div>
@@ -1277,7 +1277,7 @@ export default function HomePage() {
 
         {/* ═══════ 9. TESTIMONIALS ═══════ */}
         <Section className="py-16 sm:py-24">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-14">
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
                 ★ Ils nous font confiance
@@ -1316,7 +1316,7 @@ export default function HomePage() {
 
         {/* ═══════ 10. CTA SECTION ═══════ */}
         <Section className="py-16 sm:py-24 bg-secondary/40">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
               Prêt à jouer ?
             </h2>
@@ -1333,7 +1333,7 @@ export default function HomePage() {
 
       {/* ═══════ 11. FOOTER (sticky, mt-auto) ═══════ */}
       <footer className="border-t border-border py-8 mt-auto bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="ZalFoot" width={72} height={72} className="rounded-lg w-[56px] h-[56px] sm:w-[72px] sm:h-[72px]" />
             <span className="text-sm font-semibold text-foreground">

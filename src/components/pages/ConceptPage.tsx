@@ -85,7 +85,7 @@ export default function ConceptPage({ onBack }: { onBack: () => void }) {
       subtitle="Révolutionner la réservation de terrains de football au Sénégal. Simple, rapide, moderne."
       onBack={onBack}
     >
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
 
         {/* ─── Intro ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">

@@ -68,7 +68,7 @@ export default function ContactPage({ onBack }: { onBack: () => void }) {
       subtitle="Une question, une réservation spéciale ou un partenariat ? Nous sommes à votre écoute."
       onBack={onBack}
     >
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
 
           {/* ─── Left: Info ─── */}

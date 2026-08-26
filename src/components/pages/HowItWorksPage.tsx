@@ -95,7 +95,7 @@ export default function HowItWorksPage({ onBack }: { onBack: () => void }) {
       subtitle="Réservez votre terrain de football en quelques secondes, directement depuis votre téléphone."
       onBack={onBack}
     >
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
 
         {/* ─── Features Badges ─── */}
         <div className="flex flex-wrap gap-2 justify-center">

@@ -24,7 +24,7 @@ export default function PageLayout({
     <div className="min-h-screen flex flex-col">
       {/* ─── Header ─── */}
       <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4 mr-1.5" /> Retour
@@ -44,7 +44,7 @@ export default function PageLayout({
       <main className="flex-1">
         {/* Hero Banner */}
         <div className="bg-secondary/40 border-b border-border">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -69,7 +69,7 @@ export default function PageLayout({
 
       {/* ─── Footer ─── */}
       <footer className="border-t border-border py-6 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Image src="/logo.png" alt="ZalFoot" width={20} height={20} className="rounded" />
             <span className="text-sm font-semibold"><span className="text-primary">Zal</span>Foot</span>

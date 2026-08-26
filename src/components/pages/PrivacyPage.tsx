@@ -98,7 +98,7 @@ export default function PrivacyPage({ onBack }: { onBack: () => void }) {
       subtitle="Nous prenons la protection de vos données personnelles très au sérieux."
       onBack={onBack}
     >
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12">
 
         {/* ─── Last updated ─── */}
         <p className="text-xs text-muted-foreground">Dernière mise à jour : Janvier 2025</p>
