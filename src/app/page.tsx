@@ -1,21 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import {
   Select,
   SelectContent,
@@ -40,7 +32,6 @@ import {
   Star,
   Search,
   Check,
-  Banknote,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -53,20 +44,13 @@ import ConceptPage from '@/components/pages/ConceptPage';
 import AboutPage from '@/components/pages/AboutPage';
 import PrivacyPage from '@/components/pages/PrivacyPage';
 import CalendarPage from '@/components/pages/CalendarPage';
+import BookingPage from '@/components/pages/BookingPage';
 
 /* ═══════════════════════════════════════════
    Types & Constants
    ═══════════════════════════════════════════ */
 
-interface TimeSlot {
-  id: string;
-  time: string;
-  label: string;
-  available: boolean;
-  price: number;
-}
-
-type PageView = 'landing' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy' | 'calendar';
+type PageView = 'landing' | 'booking' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy' | 'calendar';
 
 const NAV_LINKS = [
   { label: 'Terrain', href: '#terrains' },
@@ -174,22 +158,6 @@ const VENUE = {
   hours: '08:00 – 00:00',
 };
 
-function generateTimeSlots(availableHours?: Set<string>): TimeSlot[] {
-  const slots: TimeSlot[] = [];
-  for (let h = 8; h <= 23; h++) {
-    const timeStr = `${h.toString().padStart(2, '0')}:00`;
-    const available = availableHours ? !availableHours.has(timeStr) : true;
-    slots.push({
-      id: `slot-${h}`,
-      time: timeStr,
-      label: `${timeStr} – ${(h + 1).toString().padStart(2, '0')}:00`,
-      available,
-      price: 25000,
-    });
-  }
-  return slots;
-}
-
 /* ═══════════════════════════════════════════
    Animated Counter
    ═══════════════════════════════════════════ */
@@ -242,536 +210,12 @@ function Section({ children, className = '', id }: { children: React.ReactNode; 
 }
 
 /* ═══════════════════════════════════════════
-   Slot Grid Button
-   ═══════════════════════════════════════════ */
-
-function SlotGridButton({ slot, selected, onClick }: { slot: TimeSlot; selected: boolean; onClick: () => void }) {
-  return (
-    <button
-      disabled={!slot.available}
-      onClick={onClick}
-      className={
-        `relative rounded-xl p-3 text-sm font-bold transition-all duration-200 ${
-          !slot.available
-            ? 'bg-red-50 border-2 border-red-300 text-red-400 cursor-not-allowed line-through'
-            : selected
-              ? 'bg-green-800 text-white border-2 border-green-800 shadow-lg shadow-green-800/30 scale-105'
-              : 'bg-green-50 border-2 border-green-700 text-green-900 hover:bg-green-100 hover:border-green-800'
-        }`
-      }
-    >
-      {slot.time}
-      {!slot.available && (
-        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400" />
-      )}
-      {selected && (
-        <Check className="absolute top-1.5 right-1.5 w-3.5 h-3.5 text-white" />
-      )}
-    </button>
-  );
-}
-
-/* ═══════════════════════════════════════════
-   Booking Dialog
-   ═══════════════════════════════════════════ */
-
-function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [step, setStep] = useState<'select' | 'info' | 'payment' | 'confirm'>('select');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | 'cash' | null>(null);
-  const [paymentPhone, setPaymentPhone] = useState('');
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [isPaying, setIsPaying] = useState(false);
-  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([]);
-
-  const fullyBookedSet = useMemo(() => new Set(fullyBookedDates), [fullyBookedDates]);
-
-  const fetchSlots = useCallback(async (date: Date) => {
-    setLoadingSlots(true);
-    try {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const res = await fetch(`/api/bookings?date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        const bookedSet = new Set(
-          data.available
-            .filter((s: { time: string; available: boolean }) => !s.available)
-            .map((s: { time: string; available: boolean }) => s.time)
-        );
-        setSlots(generateTimeSlots(bookedSet));
-      } else {
-        setSlots(generateTimeSlots());
-      }
-    } catch {
-      setSlots(generateTimeSlots());
-    } finally {
-      setLoadingSlots(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      const tomorrow = addDays(new Date(), 1);
-      setSelectedDate(tomorrow);
-      setSelectedSlot(null);
-      setStep('select');
-      setName('');
-      setPhone('');
-      setPaymentMethod(null);
-      setPaymentPhone('');
-      setBookingId(null);
-      setIsPaying(false);
-      fetchSlots(tomorrow);
-    }
-  }, [open, fetchSlots]);
-
-  useEffect(() => {
-    if (open && selectedDate) {
-      setSelectedSlot(null);
-      fetchSlots(selectedDate);
-    }
-  }, [selectedDate, open, fetchSlots]);
-
-  // Fetch fully booked dates for calendar coloring
-  useEffect(() => {
-    if (!open || !selectedDate) return;
-    const monthStr = format(selectedDate, 'yyyy-MM');
-    fetch(`/api/bookings/month-availability?month=${monthStr}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.fullyBooked) setFullyBookedDates(data.fullyBooked);
-      })
-      .catch(() => {});
-  }, [open, selectedDate]);
-
-  const handleConfirmInfo = useCallback(async () => {
-    if (!selectedSlot || !selectedDate || !name || !phone) return;
-    setIsSubmitting(true);
-    try {
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          timeSlot: selectedSlot.time,
-          customerName: name,
-          customerPhone: phone,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBookingId(data.id || data.booking?.id || null);
-        setPaymentPhone(phone);
-        setStep('payment');
-      }
-    } catch {
-      // silent
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [selectedSlot, selectedDate, name, phone]);
-
-  const handleInitiatePayment = useCallback(async () => {
-    if (!paymentMethod || !bookingId) return;
-    if (paymentMethod !== 'cash' && !paymentPhone) return;
-
-    setIsPaying(true);
-    try {
-      // For all methods: directly confirm the booking with payment info
-      // In production, Wave/OM would redirect to a real payment gateway
-      await fetch(`/api/bookings/${bookingId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'confirmed',
-          paymentStatus: paymentMethod === 'cash' ? 'pending' : 'partial',
-          paymentMethod,
-          depositPaid: paymentMethod === 'cash' ? 0 : 5000,
-        }),
-      });
-      setStep('confirm');
-    } catch {
-      // silent
-    } finally {
-      setIsPaying(false);
-    }
-  }, [paymentMethod, paymentPhone, bookingId]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl md:max-w-5xl bg-white border-border max-h-[95vh] overflow-hidden flex flex-col p-0">
-        {step === 'confirm' ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-              <Zap className="w-8 h-8 text-primary" />
-            </div>
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Réservation confirmée !</DialogTitle>
-              <DialogDescription className="text-muted-foreground text-base mt-2">
-                Votre créneau a été réservé avec succès. Vous recevrez un SMS de confirmation.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="bg-secondary rounded-xl p-4 mt-4 w-full max-w-sm space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Date</span>
-                <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Créneau</span>
-                <span className="font-medium">{selectedSlot?.label}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Méthode de paiement</span>
-                <span className="font-medium">{paymentMethod === 'wave' ? 'Wave' : paymentMethod === 'orange_money' ? 'Orange Money' : paymentMethod === 'cash' ? 'Espèces' : '—'}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Acompte</span>
-                <span className="font-medium text-primary">{paymentMethod === 'cash' ? 'Sur place' : '5 000 FCFA'}</span>
-              </div>
-            </div>
-            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 w-full max-w-sm mt-1">
-              <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Réservation confirmée</p>
-              <p className="text-xs text-emerald-600/80 dark:text-emerald-500/70 mt-1">{paymentMethod === 'cash' ? 'Presentez-vous avec le montant total (25 000 FCFA) à votre arrivée.' : `Acompte de 5 000 FCFA via ${paymentMethod === 'wave' ? 'Wave' : 'Orange Money'}. Le solde (20 000 FCFA) se paie sur place.`}</p>
-            </div>
-            <Button
-              className="mt-2 w-full max-w-sm bg-primary hover:bg-primary/90"
-              onClick={() => onOpenChange(false)}
-            >
-              Fermer
-            </Button>
-          </div>
-        ) : (
-          <>
-            <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="text-xl font-bold">{step === 'select' ? '⚡ Réservez votre match en 30 secondes' : step === 'info' ? 'Vos informations' : 'Méthode de paiement'}</DialogTitle>
-              <DialogDescription className="sr-only">{step === 'select' ? 'Choisissez votre date et votre horaire' : step === 'info' ? 'Complétez vos informations' : 'Choisissez votre méthode de paiement'}</DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full">
-                <div className="p-6 pt-2 pb-4">
-                  {step === 'select' && (
-                    <div className="space-y-5">
-                      {/* Calendar + Field Image Layout */}
-                      <div className="flex flex-col md:flex-row gap-5">
-                        {/* Calendar - Left */}
-                        <div className="flex-1">
-                          <div className="border-[3px] border-green-800 rounded-2xl p-3 sm:p-4">
-                            <Calendar
-                              mode="single"
-                              selected={selectedDate}
-                              onSelect={setSelectedDate}
-                              disabled={{ before: new Date() }}
-                              className="rounded-xl"
-                              modifiers={{
-                                fullyBooked: fullyBookedDates.map((d) => new Date(d + 'T00:00:00')),
-                              }}
-                              modifiersClassNames={{
-                                fullyBooked: 'bg-red-100 text-red-600 font-bold line-through',
-                                day_selected: 'bg-green-800 text-white rounded-md font-bold',
-                                day_today: 'bg-green-100 text-green-900 rounded-md font-bold ring-2 ring-green-400',
-                              }}
-                            />
-                          </div>
-                        </div>
-                        {/* Field Image - Right */}
-                        <div className="hidden md:flex flex-col items-center justify-center w-[280px] lg:w-[320px]">
-                          <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-[3px] border-green-800 shadow-xl">
-                            <Image
-                              src="/terrain.png"
-                              alt="Terrain ZalFoot"
-                              fill
-                              className="object-cover"
-                              sizes="320px"
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                              <p className="text-white font-bold text-sm">ZalFoot Arena</p>
-                              <p className="text-white/80 text-xs">Synthétique • LED • Vestiaires</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Legend */}
-                      <div className="flex flex-wrap gap-3 justify-center">
-                        <div className="flex items-center gap-2 px-5 py-3 bg-green-50 border-2 border-green-700 rounded-xl">
-                          <span className="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
-                          </span>
-                          <span className="text-base font-bold text-green-900">Disponible</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-5 py-3 bg-red-50 border-2 border-red-300 rounded-xl">
-                          <span className="w-8 h-8 rounded-lg bg-red-400 flex items-center justify-center">
-                            <X className="w-4 h-4 text-white" />
-                          </span>
-                          <span className="text-base font-bold text-red-700">Complet</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-5 py-3 bg-green-800 border-2 border-green-800 rounded-xl">
-                          <span className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <Zap className="w-4 h-4 text-white" />
-                          </span>
-                          <span className="text-base font-bold text-white">Sélectionné</span>
-                        </div>
-                      </div>
-
-                      {/* Time Slots Grid */}
-                      {selectedDate && (
-                        <div>
-                          <p className="text-sm font-bold text-foreground mb-3">
-                            Créneaux — {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
-                          </p>
-                          <div className="border-[3px] border-green-800 rounded-2xl p-4 sm:p-5">
-                            {loadingSlots ? (
-                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                                {Array.from({ length: 8 }).map((_, i) => (
-                                  <div key={i} className="h-12 rounded-xl bg-green-100 animate-pulse" />
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                                {slots.map((slot) => (
-                                  <SlotGridButton
-                                    key={slot.id}
-                                    slot={slot}
-                                    selected={selectedSlot?.id === slot.id}
-                                    onClick={() => setSelectedSlot(slot)}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {step === 'info' && (
-                    <div className="space-y-4">
-                      <div className="bg-secondary rounded-xl p-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Date</span>
-                          <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Créneau</span>
-                          <span className="font-medium">{selectedSlot?.label}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Prix</span>
-                          <span className="font-medium">{VENUE.pricePerHour}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <Label htmlFor="name">Nom complet</Label>
-                          <Input id="name" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5" />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Téléphone</Label>
-                          <Input id="phone" placeholder="+221 7X XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1.5" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {step === 'payment' && (
-                    <div className="space-y-5">
-                      {/* Order Summary */}
-                      <div className="bg-secondary rounded-xl p-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Date</span>
-                          <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Créneau</span>
-                          <span className="font-medium">{selectedSlot?.label}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Prix</span>
-                          <span className="font-medium">{VENUE.pricePerHour}</span>
-                        </div>
-                      </div>
-
-                      {/* Payment Method Selection */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">Méthode de paiement</Label>
-                        <div className="space-y-3">
-                          {/* Wave Card */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (paymentMethod === 'wave') { setPaymentMethod(null); setPaymentPhone(''); }
-                              else { setPaymentMethod('wave'); setPaymentPhone(phone); }
-                            }}
-                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
-                              paymentMethod === 'wave'
-                                ? 'border-emerald-500 bg-emerald-50'
-                                : 'border-border bg-white hover:border-emerald-300'
-                            }`}
-                          >
-                            <Image src="/pay-wave.png" alt="Wave" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
-                            <div className="flex-1">
-                              <p className={`font-bold text-sm ${paymentMethod === 'wave' ? 'text-emerald-700' : 'text-foreground'}`}>Wave</p>
-                              <p className={`text-xs ${paymentMethod === 'wave' ? 'text-emerald-600' : 'text-muted-foreground'}`}>Payer avec Wave</p>
-                            </div>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              paymentMethod === 'wave' ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground/30'
-                            }`}>
-                              {paymentMethod === 'wave' && <Check className="w-4 h-4 text-white" />}
-                            </div>
-                          </button>
-                          {paymentMethod === 'wave' && (
-                            <input
-                              type="tel"
-                              placeholder="Numéro Wave"
-                              value={paymentPhone}
-                              onChange={(e) => setPaymentPhone(e.target.value)}
-                              className="w-full rounded-xl border-2 border-emerald-300 bg-emerald-50/50 text-foreground placeholder:text-muted-foreground text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                            />
-                          )}
-
-                          {/* Orange Money Card */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (paymentMethod === 'orange_money') { setPaymentMethod(null); setPaymentPhone(''); }
-                              else { setPaymentMethod('orange_money'); setPaymentPhone(phone); }
-                            }}
-                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
-                              paymentMethod === 'orange_money'
-                                ? 'border-orange-500 bg-orange-50'
-                                : 'border-border bg-white hover:border-orange-300'
-                            }`}
-                          >
-                            <Image src="/pay-orange-money.jpg" alt="Orange Money" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
-                            <div className="flex-1">
-                              <p className={`font-bold text-sm ${paymentMethod === 'orange_money' ? 'text-orange-700' : 'text-foreground'}`}>Orange Money</p>
-                              <p className={`text-xs ${paymentMethod === 'orange_money' ? 'text-orange-600' : 'text-muted-foreground'}`}>Payer avec Orange Money</p>
-                            </div>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              paymentMethod === 'orange_money' ? 'border-orange-500 bg-orange-500' : 'border-muted-foreground/30'
-                            }`}>
-                              {paymentMethod === 'orange_money' && <Check className="w-4 h-4 text-white" />}
-                            </div>
-                          </button>
-                          {paymentMethod === 'orange_money' && (
-                            <input
-                              type="tel"
-                              placeholder="Numéro OM"
-                              value={paymentPhone}
-                              onChange={(e) => setPaymentPhone(e.target.value)}
-                              className="w-full rounded-xl border-2 border-orange-300 bg-orange-50/50 text-foreground placeholder:text-muted-foreground text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                            />
-                          )}
-
-                          {/* Espèces Card */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (paymentMethod === 'cash') { setPaymentMethod(null); setPaymentPhone(''); }
-                              else { setPaymentMethod('cash'); setPaymentPhone(''); }
-                            }}
-                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
-                              paymentMethod === 'cash'
-                                ? 'border-gray-600 bg-gray-100'
-                                : 'border-border bg-white hover:border-gray-400'
-                            }`}
-                          >
-                            <Image src="/pay-especes.png" alt="Espèces" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
-                            <div className="flex-1">
-                              <p className={`font-bold text-sm ${paymentMethod === 'cash' ? 'text-gray-800' : 'text-foreground'}`}>Espèces</p>
-                              <p className={`text-xs ${paymentMethod === 'cash' ? 'text-gray-600' : 'text-muted-foreground'}`}>Payer sur place</p>
-                            </div>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              paymentMethod === 'cash' ? 'border-gray-600 bg-gray-600' : 'border-muted-foreground/30'
-                            }`}>
-                              {paymentMethod === 'cash' && <Check className="w-4 h-4 text-white" />}
-                            </div>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Deposit Amount */}
-                      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
-                        <p className="text-sm text-muted-foreground">Acompte</p>
-                        <p className="text-2xl font-extrabold text-primary">5 000 FCFA</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-            {/* Sticky action buttons outside scroll */}
-            <div className="shrink-0 border-t border-border p-4 bg-card">
-              {step === 'select' && (
-                <Button className="w-full" size="lg" disabled={!selectedSlot} onClick={() => setStep('info')}>
-                  Continuer <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              )}
-              {step === 'info' && (
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={() => setStep('select')}>Retour</Button>
-                  <Button
-                    className="flex-1"
-                    size="lg"
-                    disabled={!name || !phone || isSubmitting}
-                    onClick={handleConfirmInfo}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Réservation...
-                      </span>
-                    ) : (
-                      'Confirmer'
-                    )}
-                  </Button>
-                </div>
-              )}
-              {step === 'payment' && (
-                <div className="space-y-3">
-                  <Button
-                    className="w-full text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    size="lg"
-                    disabled={!paymentMethod || (paymentMethod !== 'cash' && !paymentPhone) || isPaying}
-                    onClick={handleInitiatePayment}
-                  >
-                    {isPaying ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Traitement...
-                      </span>
-                    ) : paymentMethod === 'cash' ? (
-                      'Confirmer la réservation'
-                    ) : (
-                      'Payer 5 000 FCFA'
-                    )}
-                  </Button>
-                  <p className="text-xs text-center text-muted-foreground">
-                    {paymentMethod === 'cash' ? 'Paiement intégral sur place (25 000 FCFA)' : 'Le solde (20 000 FCFA) se paie sur place'}
-                  </p>
-                  <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ═══════════════════════════════════════════
    Main Page
    ═══════════════════════════════════════════ */
 
 export default function HomePage() {
   const [view, setView] = useState<PageView>('landing');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [bookingOpen, setBookingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const handleBackToLanding = useCallback(() => {
@@ -794,6 +238,9 @@ export default function HomePage() {
   const bannerStatsRef = useRef<HTMLDivElement>(null);
   const bannerStatsInView = useInView(bannerStatsRef, { once: true });
 
+  if (view === 'booking') {
+    return <BookingPage onBack={handleBackToLanding} />;
+  }
   if (view === 'dashboard') {
     return <Dashboard onBack={handleBackToLanding} />;
   }
@@ -807,7 +254,7 @@ export default function HomePage() {
     return <HowItWorksPage onBack={handleBackToLanding} />;
   }
   if (view === 'pricing') {
-    return <PricingPage onBack={handleBackToLanding} onBook={() => { setView('landing'); setTimeout(() => setBookingOpen(true), 100); }} />;
+    return <PricingPage onBack={handleBackToLanding} onBook={() => navigateTo('booking')} />;
   }
   if (view === 'concept') {
     return <ConceptPage onBack={handleBackToLanding} />;
@@ -866,7 +313,7 @@ export default function HomePage() {
               <LogIn className="w-4 h-4" />
               Connexion
             </button>
-            <Button size="sm" className="glow-green" onClick={() => setBookingOpen(true)}>
+            <Button size="sm" className="glow-green" onClick={() => navigateTo('booking')}>
               <Zap className="w-4 h-4 mr-1.5" />
               Réserver
             </Button>
@@ -929,7 +376,7 @@ export default function HomePage() {
                   className="w-full glow-green mt-2"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    setBookingOpen(true);
+                    navigateTo('booking');
                   }}
                 >
                   <Zap className="w-4 h-4 mr-1.5" /> Réserver
@@ -985,7 +432,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <Button size="lg" className="text-base px-8 glow-green" onClick={() => setBookingOpen(true)}>
+              <Button size="lg" className="text-base px-8 glow-green" onClick={() => navigateTo('booking')}>
                 <Zap className="w-4 h-4 mr-2" />
                 Réserver maintenant
               </Button>
@@ -1081,7 +528,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Search button */}
-                <Button className="w-full sm:w-auto" size="lg" onClick={() => setBookingOpen(true)}>
+                <Button className="w-full sm:w-auto" size="lg" onClick={() => navigateTo('booking')}>
                   <Search className="w-4 h-4 mr-2" />
                   Rechercher
                 </Button>
@@ -1240,7 +687,7 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-                <Button size="lg" className="w-full glow-green mt-2" onClick={() => setBookingOpen(true)}>
+                <Button size="lg" className="w-full glow-green mt-2" onClick={() => navigateTo('booking')}>
                   Voir les créneaux
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -1347,7 +794,7 @@ export default function HomePage() {
             <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-md mx-auto">
               Réservez votre créneau dès maintenant
             </p>
-            <Button size="lg" className="text-base px-10 py-6 glow-green" onClick={() => setBookingOpen(true)}>
+            <Button size="lg" className="text-base px-10 py-6 glow-green" onClick={() => navigateTo('booking')}>
               <Zap className="w-5 h-5 mr-2" />
               Réserver maintenant
             </Button>
@@ -1380,8 +827,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
     </div>
   );
 }

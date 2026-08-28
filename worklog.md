@@ -160,3 +160,33 @@ Stage Summary:
 - Formulaire de paiement intact avec icônes de marque
 - Vérifié au navigateur: 9/10 sélecteur, 10/10 paiement
 - Lint propre, pas d'erreurs runtime
+
+---
+Task ID: 4
+Agent: Main
+Task: Convertir la réservation de modale à page complète
+
+Work Log:
+- Créé src/components/pages/BookingPage.tsx — page complète avec:
+  - Header sticky avec bouton retour + indicateur d'étapes (Créneau > Informations > Paiement)
+  - Mobile: indicateur d'étapes en cercles numérotés
+  - Step select: calendrier vert + image terrain + légende + grille horaires (6 colonnes sur desktop)
+  - Step info: récapitulatif + formulaire nom/téléphone
+  - Step payment: récapitulatif + 3 cartes de paiement (Wave/OM/Espèces) + acompte 5000 FCFA
+  - Step confirm: page de confirmation centrée
+  - Barre d'action sticky en bas
+- Mis à jour page.tsx:
+  - Ajouté 'booking' à PageView
+  - Importé BookingPage
+  - Remplacé setBookingOpen(true) par navigateTo('booking')
+  - Supprimé bookingOpen state
+  - Supprimé BookingDialog et SlotGridButton (déplacés dans BookingPage)
+  - Nettoyé les imports inutilisés (Dialog, ScrollArea, Calendar, Banknote, useMemo)
+  - Supprimé TimeSlot interface et generateTimeSlots
+
+Stage Summary:
+- Réservation affichée en page complète (plus de modale)
+- Flow complet vérifié: sélection → infos → paiement (10/10)
+- Indicateur d'étapes visible dans le header
+- Lint propre, serveur compilé
+- Code poussé sur GitHub
