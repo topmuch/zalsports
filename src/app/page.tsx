@@ -39,8 +39,7 @@ import {
   User,
   Star,
   Search,
-  Banknote,
-  CheckCircle2,
+  Check,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -517,7 +516,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                       {/* Payment Method Selection */}
                       <div className="space-y-3">
                         <Label className="text-sm font-medium">Méthode de paiement</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="space-y-3">
                           {/* Wave Card */}
                           <button
                             type="button"
@@ -525,61 +524,32 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                               if (paymentMethod === 'wave') { setPaymentMethod(null); setPaymentPhone(''); }
                               else { setPaymentMethod('wave'); setPaymentPhone(phone); }
                             }}
-                            className={`relative rounded-xl p-4 text-left transition-all ${
+                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
                               paymentMethod === 'wave'
-                                ? 'ring-2 ring-green-400 bg-gradient-to-br from-emerald-500 to-emerald-600'
-                                : 'bg-gradient-to-br from-emerald-500/80 to-emerald-600/80 hover:from-emerald-500 hover:to-emerald-600'
+                                ? 'border-emerald-500 bg-emerald-50'
+                                : 'border-border bg-white hover:border-emerald-300'
                             }`}
                           >
-                            <div className="flex items-center gap-3 mb-3">
-                              <svg viewBox="0 0 40 40" className="w-10 h-10 flex-shrink-0">
-                                <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
-                                <text x="20" y="26" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="sans-serif">W</text>
-                              </svg>
-                              <div className="flex-1">
-                                <p className="text-white font-bold text-sm">Wave</p>
-                                <p className="text-white/80 text-xs">Payer avec Wave</p>
-                              </div>
-                              {paymentMethod === 'wave' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
+                            <Image src="/pay-wave.png" alt="Wave" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm ${paymentMethod === 'wave' ? 'text-emerald-700' : 'text-foreground'}`}>Wave</p>
+                              <p className={`text-xs ${paymentMethod === 'wave' ? 'text-emerald-600' : 'text-muted-foreground'}`}>Payer avec Wave</p>
                             </div>
-                            {paymentMethod === 'wave' && (
-                              <div className="mt-1">
-                                <input
-                                  type="tel"
-                                  placeholder="Numéro Wave"
-                                  value={paymentPhone}
-                                  onChange={(e) => setPaymentPhone(e.target.value)}
-                                  className="w-full rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/60 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/50"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            )}
-                          </button>
-
-                          {/* Cash Card */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (paymentMethod === 'cash') { setPaymentMethod(null); setPaymentPhone(''); }
-                              else { setPaymentMethod('cash'); setPaymentPhone(''); }
-                            }}
-                            className={`relative rounded-xl p-4 text-left transition-all ${
-                              paymentMethod === 'cash'
-                                ? 'ring-2 ring-primary bg-gradient-to-br from-foreground/90 to-foreground'
-                                : 'bg-gradient-to-br from-foreground/80 to-foreground/80 hover:from-foreground/90 hover:to-foreground/90'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center">
-                                <Banknote className="w-5 h-5 text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-white font-bold text-sm">Espèces</p>
-                                <p className="text-white/80 text-xs">Payer sur place</p>
-                              </div>
-                              {paymentMethod === 'cash' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              paymentMethod === 'wave' ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground/30'
+                            }`}>
+                              {paymentMethod === 'wave' && <Check className="w-4 h-4 text-white" />}
                             </div>
                           </button>
+                          {paymentMethod === 'wave' && (
+                            <input
+                              type="tel"
+                              placeholder="Numéro Wave"
+                              value={paymentPhone}
+                              onChange={(e) => setPaymentPhone(e.target.value)}
+                              className="w-full rounded-xl border-2 border-emerald-300 bg-emerald-50/50 text-foreground placeholder:text-muted-foreground text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            />
+                          )}
 
                           {/* Orange Money Card */}
                           <button
@@ -588,35 +558,56 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
                               if (paymentMethod === 'orange_money') { setPaymentMethod(null); setPaymentPhone(''); }
                               else { setPaymentMethod('orange_money'); setPaymentPhone(phone); }
                             }}
-                            className={`relative rounded-xl p-4 text-left transition-all ${
+                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
                               paymentMethod === 'orange_money'
-                                ? 'ring-2 ring-orange-400 bg-gradient-to-br from-orange-500 to-orange-600'
-                                : 'bg-gradient-to-br from-orange-500/80 to-orange-600/80 hover:from-orange-500 hover:to-orange-600'
+                                ? 'border-orange-500 bg-orange-50'
+                                : 'border-border bg-white hover:border-orange-300'
                             }`}
                           >
-                            <div className="flex items-center gap-3 mb-3">
-                              <svg viewBox="0 0 40 40" className="w-10 h-10 flex-shrink-0">
-                                <circle cx="20" cy="20" r="20" fill="white" fillOpacity="0.2"/>
-                                <text x="20" y="24" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">OM</text>
-                              </svg>
-                              <div className="flex-1">
-                                <p className="text-white font-bold text-sm">Orange Money</p>
-                                <p className="text-white/80 text-xs">Payer avec Orange Money</p>
-                              </div>
-                              {paymentMethod === 'orange_money' && <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />}
+                            <Image src="/pay-orange-money.jpg" alt="Orange Money" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm ${paymentMethod === 'orange_money' ? 'text-orange-700' : 'text-foreground'}`}>Orange Money</p>
+                              <p className={`text-xs ${paymentMethod === 'orange_money' ? 'text-orange-600' : 'text-muted-foreground'}`}>Payer avec Orange Money</p>
                             </div>
-                            {paymentMethod === 'orange_money' && (
-                              <div className="mt-1">
-                                <input
-                                  type="tel"
-                                  placeholder="Numéro OM"
-                                  value={paymentPhone}
-                                  onChange={(e) => setPaymentPhone(e.target.value)}
-                                  className="w-full rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/60 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white/50"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            )}
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              paymentMethod === 'orange_money' ? 'border-orange-500 bg-orange-500' : 'border-muted-foreground/30'
+                            }`}>
+                              {paymentMethod === 'orange_money' && <Check className="w-4 h-4 text-white" />}
+                            </div>
+                          </button>
+                          {paymentMethod === 'orange_money' && (
+                            <input
+                              type="tel"
+                              placeholder="Numéro OM"
+                              value={paymentPhone}
+                              onChange={(e) => setPaymentPhone(e.target.value)}
+                              className="w-full rounded-xl border-2 border-orange-300 bg-orange-50/50 text-foreground placeholder:text-muted-foreground text-sm px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                            />
+                          )}
+
+                          {/* Espèces Card */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (paymentMethod === 'cash') { setPaymentMethod(null); setPaymentPhone(''); }
+                              else { setPaymentMethod('cash'); setPaymentPhone(''); }
+                            }}
+                            className={`w-full rounded-2xl border-2 p-4 text-left transition-all flex items-center gap-4 ${
+                              paymentMethod === 'cash'
+                                ? 'border-gray-600 bg-gray-100'
+                                : 'border-border bg-white hover:border-gray-400'
+                            }`}
+                          >
+                            <Image src="/pay-especes.png" alt="Espèces" width={48} height={48} className="w-12 h-12 object-contain rounded-lg" />
+                            <div className="flex-1">
+                              <p className={`font-bold text-sm ${paymentMethod === 'cash' ? 'text-gray-800' : 'text-foreground'}`}>Espèces</p>
+                              <p className={`text-xs ${paymentMethod === 'cash' ? 'text-gray-600' : 'text-muted-foreground'}`}>Payer sur place</p>
+                            </div>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              paymentMethod === 'cash' ? 'border-gray-600 bg-gray-600' : 'border-muted-foreground/30'
+                            }`}>
+                              {paymentMethod === 'cash' && <Check className="w-4 h-4 text-white" />}
+                            </div>
                           </button>
                         </div>
                       </div>
