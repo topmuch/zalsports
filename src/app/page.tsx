@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import {
   Star,
   Search,
   Check,
+  Banknote,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -241,6 +242,36 @@ function Section({ children, className = '', id }: { children: React.ReactNode; 
 }
 
 /* ═══════════════════════════════════════════
+   Slot Grid Button
+   ═══════════════════════════════════════════ */
+
+function SlotGridButton({ slot, selected, onClick }: { slot: TimeSlot; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      disabled={!slot.available}
+      onClick={onClick}
+      className={
+        `relative rounded-xl p-3 text-sm font-bold transition-all duration-200 ${
+          !slot.available
+            ? 'bg-red-50 border-2 border-red-300 text-red-400 cursor-not-allowed line-through'
+            : selected
+              ? 'bg-green-800 text-white border-2 border-green-800 shadow-lg shadow-green-800/30 scale-105'
+              : 'bg-green-50 border-2 border-green-700 text-green-900 hover:bg-green-100 hover:border-green-800'
+        }`
+      }
+    >
+      {slot.time}
+      {!slot.available && (
+        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400" />
+      )}
+      {selected && (
+        <Check className="absolute top-1.5 right-1.5 w-3.5 h-3.5 text-white" />
+      )}
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════
    Booking Dialog
    ═══════════════════════════════════════════ */
 
@@ -257,6 +288,9 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [paymentPhone, setPaymentPhone] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([]);
+
+  const fullyBookedSet = useMemo(() => new Set(fullyBookedDates), [fullyBookedDates]);
 
   const fetchSlots = useCallback(async (date: Date) => {
     setLoadingSlots(true);
@@ -303,6 +337,18 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       fetchSlots(selectedDate);
     }
   }, [selectedDate, open, fetchSlots]);
+
+  // Fetch fully booked dates for calendar coloring
+  useEffect(() => {
+    if (!open || !selectedDate) return;
+    const monthStr = format(selectedDate, 'yyyy-MM');
+    fetch(`/api/bookings/month-availability?month=${monthStr}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.fullyBooked) setFullyBookedDates(data.fullyBooked);
+      })
+      .catch(() => {});
+  }, [open, selectedDate]);
 
   const handleConfirmInfo = useCallback(async () => {
     if (!selectedSlot || !selectedDate || !name || !phone) return;
@@ -359,7 +405,7 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl md:max-w-3xl bg-card border-border max-h-[95vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-4xl md:max-w-5xl bg-white border-border max-h-[95vh] overflow-hidden flex flex-col p-0">
         {step === 'confirm' ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 text-center">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
@@ -403,66 +449,102 @@ function BookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         ) : (
           <>
             <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="text-xl font-bold">Réserver un créneau</DialogTitle>
-              <DialogDescription>{step === 'select' ? 'Choisissez votre date et votre horaire' : step === 'info' ? 'Complétez vos informations' : 'Choisissez votre méthode de paiement'}</DialogDescription>
+              <DialogTitle className="text-xl font-bold">{step === 'select' ? '⚡ Réservez votre match en 30 secondes' : step === 'info' ? 'Vos informations' : 'Méthode de paiement'}</DialogTitle>
+              <DialogDescription className="sr-only">{step === 'select' ? 'Choisissez votre date et votre horaire' : step === 'info' ? 'Complétez vos informations' : 'Choisissez votre méthode de paiement'}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
               <ScrollArea className="h-full">
                 <div className="p-6 pt-2 pb-4">
                   {step === 'select' && (
-                    <div className="space-y-6">
-                      <div>
-                        <Label className="text-sm font-medium mb-3 block">Date</Label>
-                        <div className="flex justify-center">
-                          <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={setSelectedDate}
-                            disabled={{ before: new Date() }}
-                            className="rounded-xl border border-border"
-                            classNames={{
-                              day_selected: 'bg-primary text-primary-foreground rounded-md',
-                              day_today: 'bg-accent text-accent-foreground rounded-md',
-                            }}
-                          />
+                    <div className="space-y-5">
+                      {/* Calendar + Field Image Layout */}
+                      <div className="flex flex-col md:flex-row gap-5">
+                        {/* Calendar - Left */}
+                        <div className="flex-1">
+                          <div className="border-[3px] border-green-800 rounded-2xl p-3 sm:p-4">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              disabled={{ before: new Date() }}
+                              className="rounded-xl"
+                              modifiers={{
+                                fullyBooked: fullyBookedDates.map((d) => new Date(d + 'T00:00:00')),
+                              }}
+                              modifiersClassNames={{
+                                fullyBooked: 'bg-red-100 text-red-600 font-bold line-through',
+                                day_selected: 'bg-green-800 text-white rounded-md font-bold',
+                                day_today: 'bg-green-100 text-green-900 rounded-md font-bold ring-2 ring-green-400',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {/* Field Image - Right */}
+                        <div className="hidden md:flex flex-col items-center justify-center w-[280px] lg:w-[320px]">
+                          <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-[3px] border-green-800 shadow-xl">
+                            <Image
+                              src="/terrain.png"
+                              alt="Terrain ZalFoot"
+                              fill
+                              className="object-cover"
+                              sizes="320px"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                              <p className="text-white font-bold text-sm">ZalFoot Arena</p>
+                              <p className="text-white/80 text-xs">Synthétique • LED • Vestiaires</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Legend */}
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        <div className="flex items-center gap-2 px-5 py-3 bg-green-50 border-2 border-green-700 rounded-xl">
+                          <span className="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </span>
+                          <span className="text-base font-bold text-green-900">Disponible</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-5 py-3 bg-red-50 border-2 border-red-300 rounded-xl">
+                          <span className="w-8 h-8 rounded-lg bg-red-400 flex items-center justify-center">
+                            <X className="w-4 h-4 text-white" />
+                          </span>
+                          <span className="text-base font-bold text-red-700">Complet</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-5 py-3 bg-green-800 border-2 border-green-800 rounded-xl">
+                          <span className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-white" />
+                          </span>
+                          <span className="text-base font-bold text-white">Sélectionné</span>
+                        </div>
+                      </div>
+
+                      {/* Time Slots Grid */}
                       {selectedDate && (
                         <div>
-                          <Label className="text-sm font-medium mb-3 block">
+                          <p className="text-sm font-bold text-foreground mb-3">
                             Créneaux — {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
-                          </Label>
-                          {loadingSlots ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="h-12 rounded-lg bg-secondary/50 animate-pulse" />
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {slots.map((slot) => (
-                                <button
-                                  key={slot.id}
-                                  disabled={!slot.available}
-                                  onClick={() => setSelectedSlot(slot)}
-                                  className={
-                                    `relative p-3 rounded-lg border text-sm font-medium transition-all ${
-                                      !slot.available
-                                        ? 'border-border/50 bg-secondary/30 text-muted-foreground/50 cursor-not-allowed line-through'
-                                        : selectedSlot?.id === slot.id
-                                          ? 'border-primary bg-primary/15 text-primary glow-green'
-                                          : 'border-border bg-secondary/50 hover:border-primary/50 hover:bg-secondary'
-                                    }`
-                                  }
-                                >
-                                  {slot.time}
-                                  {!slot.available && (
-                                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive/60" />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                          </p>
+                          <div className="border-[3px] border-green-800 rounded-2xl p-4 sm:p-5">
+                            {loadingSlots ? (
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                                {Array.from({ length: 8 }).map((_, i) => (
+                                  <div key={i} className="h-12 rounded-xl bg-green-100 animate-pulse" />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                                {slots.map((slot) => (
+                                  <SlotGridButton
+                                    key={slot.id}
+                                    slot={slot}
+                                    selected={selectedSlot?.id === slot.id}
+                                    onClick={() => setSelectedSlot(slot)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

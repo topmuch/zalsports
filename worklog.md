@@ -134,3 +134,29 @@ Stage Summary:
 - page.tsx updated with full SPA navigation system
 - All 6 pages verified working: Contact, Comment ça marche, Tarifs, Concept, À propos, Confidentialité
 - Mobile responsive with hamburger menu showing all page links
+---
+Task ID: 3
+Agent: Main
+Task: Restaurer le nouveau design de la page de réservation + garder le formulaire de paiement avec icônes
+
+Work Log:
+- Créé l'API /api/bookings/month-availability pour colorer les dates complètes en rouge sur le calendrier
+- Ajouté le composant SlotGridButton avec styling vert/rouge
+- Redesigné le step 'select' du BookingDialog:
+  - Titre "⚡ Réservez votre match en 30 secondes"
+  - Calendrier avec bordure vert foncé (border-[3px] border-green-800)
+  - Image du terrain (terrain.png) à droite du calendrier
+  - Légende avec 3 boutons (Disponible/Complet/Sélectionné)
+  - Grille d'horaires avec bordure vert foncé
+  - Slots verts pour disponibles, rouges pour complets
+- Ajouté state fullyBookedDates + fetch month-availability
+- Ajouté useMemo import, Banknote import
+- Élargi le DialogContent à sm:max-w-4xl md:max-w-5xl
+- Formulaire de paiement conservé avec icônes Wave, Orange Money, Espèces
+
+Stage Summary:
+- API month-availability créée
+- Design de réservation restauré (calendrier vert, image terrain, légende, grille horaires)
+- Formulaire de paiement intact avec icônes de marque
+- Vérifié au navigateur: 9/10 sélecteur, 10/10 paiement
+- Lint propre, pas d'erreurs runtime
