@@ -210,31 +210,31 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
   }, [selectedSlot, selectedDate, name, phone]);
 
   const handleInitiatePayment = useCallback(async () => {
-    if (!paymentMethod || !bookingId || !paymentPhone) return;
-
-    // Open Wave payment link FIRST (before async operations, to avoid popup blocker)
-    const waveUrl = 'https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000';
-    window.open(waveUrl, '_blank');
+    if (!bookingId || !paymentPhone) return;
 
     setIsPaying(true);
     try {
+      // Update booking status first
       await fetch(`/api/bookings/${bookingId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'confirmed',
           paymentStatus: 'partial',
-          paymentMethod,
+          paymentMethod: 'wave',
           depositPaid: 5000,
         }),
       });
-      setStep('confirm');
+
+      // Redirect to Wave payment — window.location.href works on all devices including mobile
+      window.location.href = 'https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000';
     } catch {
-      // silent
+      // If update fails, still redirect to payment
+      window.location.href = 'https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000';
     } finally {
       setIsPaying(false);
     }
-  }, [paymentMethod, paymentPhone, bookingId]);
+  }, [paymentPhone, bookingId]);
 
   /* ──── Confirm step ──── */
   if (step === 'confirm') {
