@@ -2,10 +2,18 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 // ─── Data Directory ───────────────────────────────────────────────
-const DATA_DIR = process.env.DATA_DIR || '/app/data';
+let DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 
 function ensureDataDir() {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  if (!existsSync(DATA_DIR)) {
+    try {
+      mkdirSync(DATA_DIR, { recursive: true });
+    } catch {
+      // Fallback to /tmp if default path is not writable
+      DATA_DIR = '/tmp/zalsports-data';
+      if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+    }
+  }
 }
 
 // ─── Persistence Helpers ─────────────────────────────────────────
