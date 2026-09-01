@@ -17,6 +17,9 @@ import {
   X,
   ChevronRight,
   Clock,
+  User,
+  Phone,
+  ShieldCheck,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -356,12 +359,12 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
           <div className="mb-6">
             <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
               {step === 'select' && '⚡ Réservez votre match en 30 secondes'}
-              {step === 'info' && '📋 Vos informations'}
+              {step === 'info' && 'Vos informations'}
               {step === 'payment' && '💳 Méthode de paiement'}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {step === 'select' && 'Choisissez votre date et votre horaire'}
-              {step === 'info' && 'Complétez vos informations pour confirmer'}
+              {step === 'info' && 'Complétez vos informations pour confirmer votre réservation'}
               {step === 'payment' && 'Choisissez comment payer l\'acompte'}
             </p>
           </div>
@@ -470,34 +473,96 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
 
           {/* ──── INFO STEP ──── */}
           {step === 'info' && (
-            <div className="max-w-lg space-y-6">
-              {/* Summary card */}
-              <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Récapitulatif</h3>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Date</span>
-                  <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+            <div className="max-w-xl mx-auto space-y-6">
+
+              {/* Booking Summary Card */}
+              <div className="relative rounded-2xl border border-border overflow-hidden">
+                {/* Green gradient header */}
+                <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                      <ShieldCheck className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <h3 className="text-base font-bold text-white">Récapitulatif de réservation</h3>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Créneau</span>
-                  <span className="font-medium">{selectedSlot?.label}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Prix</span>
-                  <span className="font-bold text-green-700">{VENUE.pricePerHour}</span>
+                {/* Info rows */}
+                <div className="bg-white px-6 py-5 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <CalendarDays className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Date</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Créneau</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedSlot?.label}</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Prix</p>
+                      <p className="text-sm font-bold text-green-700">{VENUE.pricePerHour} <span className="text-xs font-normal text-muted-foreground">/ heure</span></p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Form */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="bname" className="text-sm font-medium">Nom complet</Label>
-                  <Input id="bname" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5 h-12 text-base" />
+              {/* Form Card */}
+              <div className="rounded-2xl border border-border bg-white p-6 space-y-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <UserCheck className="w-5 h-5 text-green-700" />
+                  <h3 className="text-base font-bold text-foreground">Vos coordonnées</h3>
                 </div>
-                <div>
-                  <Label htmlFor="bphone" className="text-sm font-medium">Téléphone</Label>
-                  <Input id="bphone" placeholder="+221 7X XXX XX XX" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1.5 h-12 text-base" />
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="bname" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Nom complet</Label>
+                    <div className="relative mt-1.5">
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 pointer-events-none" />
+                      <Input
+                        id="bname"
+                        placeholder="Ex: Mamadou Diop"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-12 text-base pl-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bphone" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Téléphone</Label>
+                    <div className="relative mt-1.5">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 pointer-events-none" />
+                      <Input
+                        id="bphone"
+                        placeholder="78 278 49 49"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="h-12 text-base pl-11"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5 ml-0.5">Format : 78 XXX XX XX — utilisé pour la confirmation par SMS</p>
+                  </div>
                 </div>
+              </div>
+
+              {/* Trust badge */}
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                <span>Vos données sont protégées et ne sont pas partagées</span>
               </div>
             </div>
           )}
