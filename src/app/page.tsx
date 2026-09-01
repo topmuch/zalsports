@@ -273,13 +273,13 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col bg-white">
       {/* ═══════ 1. NAVBAR ═══════ */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 h-20 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 h-28 transition-all duration-300 ${
           scrolled
             ? 'bg-white/95 backdrop-blur-xl shadow-sm'
             : 'bg-white/95 backdrop-blur-xl'
         }`}
       >
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           {/* Logo only – no text */}
           <a href="#" className="flex items-center" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[72px] h-[72px] sm:w-[96px] sm:h-[96px]" />
@@ -388,7 +388,7 @@ export default function HomePage() {
       </header>
 
       {/* ═══════ MAIN CONTENT ═══════ */}
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-28">
 
         {/* ═══════ 2. HERO SECTION (terrain bg, dark overlay) ═══════ */}
         <section className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[640px] flex items-center overflow-hidden">
