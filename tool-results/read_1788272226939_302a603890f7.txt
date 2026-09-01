@@ -1,0 +1,899 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import Image from 'next/image';
+     5→import { motion, AnimatePresence } from 'framer-motion';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import { Card, CardContent } from '@/components/ui/card';
+     9→import { Input } from '@/components/ui/input';
+    10→import { Label } from '@/components/ui/label';
+    11→import { Calendar } from '@/components/ui/calendar';
+    12→import { ScrollArea } from '@/components/ui/scroll-area';
+    13→import { Switch } from '@/components/ui/switch';
+    14→import {
+    15→  Dialog,
+    16→  DialogContent,
+    17→  DialogHeader,
+    18→  DialogTitle,
+    19→  DialogDescription,
+    20→} from '@/components/ui/dialog';
+    21→import {
+    22→  ArrowLeft,
+    23→  CalendarDays,
+    24→  ClipboardList,
+    25→  PlusCircle,
+    26→  Settings,
+    27→  Phone,
+    28→  User,
+    29→  Mail,
+    30→  Bell,
+    31→  Clock,
+    32→  CheckCircle2,
+    33→  XCircle,
+    34→  AlertCircle,
+    35→  CreditCard,
+    36→  Zap,
+    37→  ChevronLeft,
+    38→  ChevronRight,
+    39→  ArrowRight,
+    40→  Trash2,
+    41→  Loader2,
+    42→  Save,
+    43→} from 'lucide-react';
+    44→import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, parseISO, isBefore } from 'date-fns';
+    45→import { fr } from 'date-fns/locale';
+    46→
+    47→/* ═══════════════════════════════════════════
+    48→   Types
+    49→   ═══════════════════════════════════════════ */
+    50→
+    51→interface Booking {
+    52→  id: string;
+    53→  date: string;
+    54→  timeSlot: string;
+    55→  customerName: string;
+    56→  customerPhone: string;
+    57→  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+    58→  paymentStatus: 'unpaid' | 'partial' | 'paid';
+    59→  amount: number;
+    60→  depositPaid: number;
+    61→  createdAt: string;
+    62→  updatedAt: string;
+    63→}
+    64→
+    65→interface UserProfile {
+    66→  phone: string;
+    67→  name: string;
+    68→  email: string;
+    69→  notifications: boolean;
+    70→}
+    71→
+    72→interface UserStats {
+    73→  totalBookings: number;
+    74→  byStatus: { confirmed: number; completed: number; cancelled: number; pending: number };
+    75→  upcomingCount: number;
+    76→  upcomingBookings: Booking[];
+    77→  totalDepositsPaid: number;
+    78→  favoriteSlot: string | null;
+    79→  monthlyTrend: { month: string; count: number }[];
+    80→}
+    81→
+    82→interface CalendarDay {
+    83→  date: string;
+    84→  bookingCount: number;
+    85→  bookings: { id: string; timeSlot: string; status: string; paymentStatus: string }[];
+    86→}
+    87→
+    88→interface TimeSlot {
+    89→  id: string;
+    90→  time: string;
+    91→  label: string;
+    92→  available: boolean;
+    93→}
+    94→
+    95→type Tab = 'calendar' | 'reservations' | 'new' | 'settings';
+    96→type ReservationFilter = 'active' | 'paid' | 'unpaid' | 'all';
+    97→
+    98→/* ═══════════════════════════════════════════
+    99→   Helpers
+   100→   ═══════════════════════════════════════════ */
+   101→
+   102→function formatMoney(n: number): string {
+   103→  return n.toLocaleString('fr-FR') + ' FCFA';
+   104→}
+   105→
+   106→function statusBadge(status: Booking['status']) {
+   107→  switch (status) {
+   108→    case 'pending':
+   109→      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">En attente</Badge>;
+   110→    case 'confirmed':
+   111→      return <Badge className="bg-primary/15 text-primary border-primary/30">Confirmé</Badge>;
+   112→    case 'completed':
+   113→      return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30">Terminé</Badge>;
+   114→    case 'cancelled':
+   115→      return <Badge className="bg-destructive/15 text-destructive border-destructive/30">Annulé</Badge>;
+   116→  }
+   117→}
+   118→
+   119→function paymentBadge(status: Booking['paymentStatus']) {
+   120→  switch (status) {
+   121→    case 'paid':
+   122→      return (
+   123→        <span className="flex items-center gap-1 text-xs text-emerald-600">
+   124→        <CheckCircle2 className="w-3 h-3" /> Payé
+   125→      </span>
+   126→      );
+   127→    case 'partial':
+   128→      return (
+   129→        <span className="flex items-center gap-1 text-xs text-amber-400">
+   130→        <AlertCircle className="w-3 h-3" /> Acompte
+   131→      </span>
+   132→      );
+   133→    case 'unpaid':
+   134→      return (
+   135→        <span className="flex items-center gap-1 text-xs text-destructive">
+   136→        <XCircle className="w-3 h-3" /> Non payé
+   137→      </span>
+   138→      );
+   139→  }
+   140→}
+   141→
+   142→function generateTimeSlots(availableHours?: Set<string>): TimeSlot[] {
+   143→  const slots: TimeSlot[] = [];
+   144→  for (let h = 8; h <= 23; h++) {
+   145→    const timeStr = `${h.toString().padStart(2, '0')}:00`;
+   146→    slots.push({
+   147→      id: `slot-${h}`,
+   148→      time: timeStr,
+   149→      label: `${timeStr} – ${(h + 1).toString().padStart(2, '0')}:00`,
+   150→      available: availableHours ? !availableHours.has(timeStr) : true,
+   151→    });
+   152→  }
+   153→  return slots;
+   154→}
+   155→
+   156→/* ═══════════════════════════════════════════
+   157→   Phone Login Screen
+   158→   ═══════════════════════════════════════════ */
+   159→
+   160→function PhoneLogin({ onLogin }: { onLogin: (phone: string) => void }) {
+   161→  const [phone, setPhone] = useState('');
+   162→  const [loading, setLoading] = useState(false);
+   163→  const [error, setError] = useState('');
+   164→
+   165→  const handleSubmit = async (e: React.FormEvent) => {
+   166→    e.preventDefault();
+   167→    setError('');
+   168→    if (!/^\+?221\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/.test(phone.trim())) {
+   169→      setError('Format invalide. Ex: 78 278 49 49');
+   170→      return;
+   171→    }
+   172→    setLoading(true);
+   173→    // Try to find profile, if not found create one on the fly
+   174→    try {
+   175→      const res = await fetch(`/api/user/profile?phone=${encodeURIComponent(phone.trim())}`);
+   176→      if (res.ok || res.status === 404) {
+   177→        onLogin(phone.trim());
+   178→      } else {
+   179→        setError('Erreur serveur. Réessayez.');
+   180→      }
+   181→    } catch {
+   182→      setError('Erreur de connexion.');
+   183→    } finally {
+   184→      setLoading(false);
+   185→    }
+   186→  };
+   187→
+   188→  return (
+   189→    <div className="min-h-[70vh] flex items-center justify-center px-4">
+   190→      <motion.div
+   191→        initial={{ opacity: 0, y: 20 }}
+   192→        animate={{ opacity: 1, y: 0 }}
+   193→        className="w-full max-w-sm space-y-6 text-center"
+   194→      >
+   195→        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+   196→          <Phone className="w-8 h-8 text-primary" />
+   197→        </div>
+   198→        <div>
+   199→          <h2 className="text-2xl font-bold">Mon espace</h2>
+   200→          <p className="text-sm text-muted-foreground mt-2">
+   201→            Entrez votre numéro pour accéder à vos réservations et paramètres.
+   202→          </p>
+   203→        </div>
+   204→        <form onSubmit={handleSubmit} className="space-y-4">
+   205→          <div>
+   206→            <Label htmlFor="login-phone" className="sr-only">Téléphone</Label>
+   207→            <Input
+   208→              id="login-phone"
+   209→              placeholder="78 278 49 49"
+   210→              value={phone}
+   211→              onChange={(e) => setPhone(e.target.value)}
+   212→              className="text-center text-lg h-12"
+   213→              autoFocus
+   214→            />
+   215→          </div>
+   216→          {error && <p className="text-xs text-destructive">{error}</p>}
+   217→          <Button type="submit" className="w-full h-12" disabled={loading || !phone}>
+   218→            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Phone className="w-4 h-4 mr-2" /> Accéder</>}
+   219→          </Button>
+   220→        </form>
+   221→        <p className="text-xs text-muted-foreground">
+   222→          Aucun compte requis — votre numéro vous identifie.
+   223→        </p>
+   224→      </motion.div>
+   225→    </div>
+   226→  );
+   227→}
+   228→
+   229→/* ═══════════════════════════════════════════
+   230→   Tab: Calendar
+   231→   ═══════════════════════════════════════════ */
+   232→
+   233→function CalendarTab({ phone }: { phone: string }) {
+   234→  const [currentMonth, setCurrentMonth] = useState(new Date());
+   235→  const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
+   236→  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+   237→  const [loading, setLoading] = useState(false);
+   238→
+   239→  const fetchCalendar = useCallback(async (date: Date) => {
+   240→    setLoading(true);
+   241→    try {
+   242→      const y = date.getFullYear();
+   243→      const m = date.getMonth() + 1;
+   244→      const res = await fetch(`/api/user/calendar?phone=${encodeURIComponent(phone)}&year=${y}&month=${m}`);
+   245→      if (res.ok) {
+   246→        const data = await res.json();
+   247→        setCalendarData(data.days || []);
+   248→      }
+   249→    } catch { /* silent */ } finally {
+   250→      setLoading(false);
+   251→    }
+   252→  }, [phone]);
+   253→
+   254→  useEffect(() => { fetchCalendar(currentMonth); }, [currentMonth, fetchCalendar]);
+   255→
+   256→  const bookingDates = new Set(calendarData.map(d => d.date));
+   257→  const selectedDayData = selectedDate ? calendarData.find(d => d.date === format(selectedDate, 'yyyy-MM-dd')) : null;
+   258→
+   259→  return (
+   260→    <div className="space-y-6">
+   261→      {/* Month Navigation */}
+   262→      <div className="flex items-center justify-between">
+   263→        <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
+   264→          <ChevronLeft className="w-4 h-4" />
+   265→        </Button>
+   266→        <h3 className="text-sm font-semibold">
+   267→          {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+   268→        </h3>
+   269→        <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
+   270→          <ChevronRight className="w-4 h-4" />
+   271→        </Button>
+   272→      </div>
+   273→
+   274→      {/* Calendar Grid */}
+   275→      <div className="flex justify-center">
+   276→        <Calendar
+   277→          mode="single"
+   278→          selected={selectedDate}
+   279→          onSelect={setSelectedDate}
+   280→          month={currentMonth}
+   281→          onMonthChange={setCurrentMonth}
+   282→          modifiers={{
+   283→            hasBookings: (date) => bookingDates.has(format(date, 'yyyy-MM-dd')),
+   284→          }}
+   285→          modifiersClassNames={{
+   286→            hasBookings: 'bg-primary/20 font-bold',
+   287→          }}
+   288→          className="rounded-xl border border-border"
+   289→          classNames={{
+   290→            day_selected: 'bg-primary text-primary-foreground rounded-md',
+   291→            day_today: 'bg-accent text-accent-foreground rounded-md',
+   292→          }}
+   293→        />
+   294→      </div>
+   295→
+   296→      {/* Selected Day Detail */}
+   297→      {selectedDate && (
+   298→        <AnimatePresence mode="wait">
+   299→          <motion.div
+   300→            key={format(selectedDate, 'yyyy-MM-dd')}
+   301→            initial={{ opacity: 0, y: 10 }}
+   302→            animate={{ opacity: 1, y: 0 }}
+   303→            exit={{ opacity: 0, y: -10 }}
+   304→            className="bg-secondary/50 rounded-xl p-4 space-y-3"
+   305→          >
+   306→            <h4 className="text-sm font-semibold">
+   307→              {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+   308→            </h4>
+   309→            {selectedDayData && selectedDayData.bookings.length > 0 ? (
+   310→              <div className="space-y-2">
+   311→                {selectedDayData.bookings.map((b) => (
+   312→                  <div key={b.id} className="flex items-center justify-between bg-card rounded-lg p-3 border border-border">
+   313→                    <div className="flex items-center gap-3">
+   314→                      <Clock className="w-4 h-4 text-primary" />
+   315→                      <span className="text-sm font-mono font-medium">{b.timeSlot}</span>
+   316→                    </div>
+   317→                    <div className="flex items-center gap-2">
+   318→                      {statusBadge(b.status as Booking['status'])}
+   319→                      {paymentBadge(b.paymentStatus as Booking['paymentStatus'])}
+   320→                    </div>
+   321→                  </div>
+   322→                ))}
+   323→              </div>
+   324→            ) : (
+   325→              <p className="text-sm text-muted-foreground text-center py-4">
+   326→                Aucune réservation ce jour.
+   327→              </p>
+   328→            )}
+   329→          </motion.div>
+   330→        </AnimatePresence>
+   331→      )}
+   332→
+   333→      {/* Legend */}
+   334→      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+   335→        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary/20 border border-primary/40" /> Jour avec réservation</span>
+   336→      </div>
+   337→    </div>
+   338→  );
+   339→}
+   340→
+   341→/* ═══════════════════════════════════════════
+   342→   Tab: Reservations
+   343→   ═══════════════════════════════════════════ */
+   344→
+   345→function ReservationsTab({ phone }: { phone: string }) {
+   346→  const [bookings, setBookings] = useState<Booking[]>([]);
+   347→  const [filter, setFilter] = useState<ReservationFilter>('active');
+   348→  const [loading, setLoading] = useState(true);
+   349→
+   350→  const fetchBookings = useCallback(async () => {
+   351→    setLoading(true);
+   352→    try {
+   353→      const params = new URLSearchParams({ phone, limit: '50' });
+   354→      const res = await fetch(`/api/user/bookings?${params}`);
+   355→      if (res.ok) {
+   356→        const data = await res.json();
+   357→        setBookings(data.bookings);
+   358→      }
+   359→    } catch { /* silent */ } finally {
+   360→      setLoading(false);
+   361→    }
+   362→  }, [phone]);
+   363→
+   364→  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+   365→
+   366→  const handleCancel = async (id: string) => {
+   367→    try {
+   368→      const res = await fetch(`/api/user/bookings/${id}?phone=${encodeURIComponent(phone)}`, { method: 'DELETE' });
+   369→      if (res.ok) fetchBookings();
+   370→    } catch { /* silent */ }
+   371→  };
+   372→
+   373→  const filtered = bookings.filter((b) => {
+   374→    if (filter === 'active') return b.status === 'confirmed' || b.status === 'pending';
+   375→    if (filter === 'paid') return b.paymentStatus === 'paid' && b.status !== 'cancelled';
+   376→    if (filter === 'unpaid') return b.paymentStatus === 'unpaid' && b.status !== 'cancelled';
+   377→    return true;
+   378→  });
+   379→
+   380→  const filters: { key: ReservationFilter; label: string; count: number }[] = [
+   381→    { key: 'active', label: 'En cours', count: bookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length },
+   382→    { key: 'paid', label: 'Payées', count: bookings.filter(b => b.paymentStatus === 'paid' && b.status !== 'cancelled').length },
+   383→    { key: 'unpaid', label: 'À payer', count: bookings.filter(b => b.paymentStatus === 'unpaid' && b.status !== 'cancelled').length },
+   384→    { key: 'all', label: 'Toutes', count: bookings.length },
+   385→  ];
+   386→
+   387→  return (
+   388→    <div className="space-y-5">
+   389→      {/* Filter Tabs */}
+   390→      <div className="flex bg-secondary rounded-lg p-0.5">
+   391→        {filters.map((f) => (
+   392→          <button
+   393→            key={f.key}
+   394→            onClick={() => setFilter(f.key)}
+   395→            className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all ${
+   396→              filter === f.key
+   397→                ? 'bg-primary text-primary-foreground shadow-sm'
+   398→                : 'text-muted-foreground hover:text-foreground'
+   399→            }`}
+   400→          >
+   401→            {f.label} <span className="ml-1 opacity-60">({f.count})</span>
+   402→          </button>
+   403→        ))}
+   404→      </div>
+   405→
+   406→      {/* Booking List */}
+   407→      <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+   408→        {loading ? (
+   409→          <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 rounded-xl bg-card border border-border animate-pulse" />)}</div>
+   410→        ) : filtered.length === 0 ? (
+   411→          <div className="text-center py-12 text-muted-foreground">
+   412→            <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
+   413→            <p className="text-sm">Aucune réservation trouvée.</p>
+   414→          </div>
+   415→        ) : (
+   416→          filtered.map((b) => {
+   417→            const isPast = isBefore(parseISO(b.date), new Date());
+   418→            return (
+   419→              <motion.div
+   420→                key={b.id}
+   421→                initial={{ opacity: 0, y: 10 }}
+   422→                animate={{ opacity: 1, y: 0 }}
+   423→                className="bg-card border border-border rounded-xl p-4 hover:border-primary/20 transition-colors"
+   424→              >
+   425→                <div className="flex items-start justify-between gap-3">
+   426→                  <div className="space-y-2 flex-1 min-w-0">
+   427→                    <div className="flex items-center gap-2 flex-wrap">
+   428→                      <span className="text-sm font-mono font-semibold text-primary">{b.timeSlot}</span>
+   429→                      {statusBadge(b.status)}
+   430→                      {paymentBadge(b.paymentStatus)}
+   431→                    </div>
+   432→                    <p className="text-sm text-muted-foreground">
+   433→                      {format(parseISO(b.date), 'EEEE d MMMM yyyy', { locale: fr })}
+   434→                    </p>
+   435→                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   436→                      <span className="flex items-center gap-1"><CreditCard className="w-3 h-3" /> {formatMoney(b.amount)}</span>
+   437→                      {b.depositPaid > 0 && <span className="text-emerald-600">Acompte: {formatMoney(b.depositPaid)}</span>}
+   438→                    </div>
+   439→                  </div>
+   440→                  {!isPast && (b.status === 'confirmed' || b.status === 'pending') && (
+   441→                    <Button
+   442→                      variant="ghost" size="sm" className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+   443→                      onClick={() => handleCancel(b.id)} title="Annuler"
+   444→                    >
+   445→                      <Trash2 className="w-3.5 h-3.5" />
+   446→                    </Button>
+   447→                  )}
+   448→                </div>
+   449→              </motion.div>
+   450→            );
+   451→          })
+   452→        )}
+   453→      </div>
+   454→    </div>
+   455→  );
+   456→}
+   457→
+   458→/* ═══════════════════════════════════════════
+   459→   Tab: New Reservation (Demande)
+   460→   ═══════════════════════════════════════════ */
+   461→
+   462→function NewReservationTab({ phone, name, onCreated }: { phone: string; name: string; onCreated: () => void }) {
+   463→  const [selectedDate, setSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
+   464→  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+   465→  const [slots, setSlots] = useState<TimeSlot[]>([]);
+   466→  const [step, setStep] = useState<'select' | 'confirm'>('select');
+   467→  const [isSubmitting, setIsSubmitting] = useState(false);
+   468→  const [loadingSlots, setLoadingSlots] = useState(false);
+   469→  const [success, setSuccess] = useState(false);
+   470→
+   471→  const fetchSlots = useCallback(async (date: Date) => {
+   472→    setLoadingSlots(true);
+   473→    try {
+   474→      const dateStr = format(date, 'yyyy-MM-dd');
+   475→      const res = await fetch(`/api/bookings?date=${dateStr}`);
+   476→      if (res.ok) {
+   477→        const data = await res.json();
+   478→        const bookedSet = new Set(data.available.filter((s: { available: boolean; time: string }) => !s.available).map((s: { time: string }) => s.time));
+   479→        setSlots(generateTimeSlots(bookedSet));
+   480→      } else {
+   481→        setSlots(generateTimeSlots());
+   482→      }
+   483→    } catch { setSlots(generateTimeSlots()); } finally {
+   484→      setLoadingSlots(false);
+   485→    }
+   486→  }, []);
+   487→
+   488→  useEffect(() => { fetchSlots(addDays(new Date(), 1)); }, [fetchSlots]);
+   489→  useEffect(() => {
+   490→    if (selectedDate) { setSelectedSlot(null); fetchSlots(selectedDate); }
+   491→  }, [selectedDate, fetchSlots]);
+   492→
+   493→  const handleSubmit = async () => {
+   494→    if (!selectedSlot || !selectedDate) return;
+   495→    setIsSubmitting(true);
+   496→    try {
+   497→      const res = await fetch('/api/bookings', {
+   498→        method: 'POST',
+   499→        headers: { 'Content-Type': 'application/json' },
+   500→        body: JSON.stringify({
+   501→          date: format(selectedDate, 'yyyy-MM-dd'),
+   502→          timeSlot: selectedSlot.time,
+   503→          customerName: name,
+   504→          customerPhone: phone,
+   505→        }),
+   506→      });
+   507→      if (res.ok) {
+   508→        setSuccess(true);
+   509→        onCreated();
+   510→      }
+   511→    } catch { /* silent */ } finally {
+   512→      setIsSubmitting(false);
+   513→    }
+   514→  };
+   515→
+   516→  if (success) {
+   517→    return (
+   518→      <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+   519→        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+   520→          <CheckCircle2 className="w-8 h-8 text-primary" />
+   521→        </div>
+   522→        <div>
+   523→          <h3 className="text-lg font-bold">Demande envoyée !</h3>
+   524→          <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+   525→            Votre réservation a été enregistrée. Vous recevrez une confirmation par SMS.
+   526→          </p>
+   527→        </div>
+   528→        <Button variant="outline" onClick={() => { setSuccess(false); setStep('select'); setSelectedSlot(null); }}>
+   529→          Nouvelle réservation
+   530→        </Button>
+   531→      </div>
+   532→    );
+   533→  }
+   534→
+   535→  return (
+   536→    <div className="space-y-6">
+   537→      <div className="bg-secondary/50 rounded-xl p-4 flex items-center gap-3">
+   538→        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+   539→        <p className="text-xs text-muted-foreground">
+   540→          Sélectionnez votre date et créneau. La réservation sera confirmée immédiatement.
+   541→        </p>
+   542→      </div>
+   543→
+   544→      {step === 'select' && (
+   545→        <div className="space-y-6">
+   546→          <div>
+   547→            <Label className="text-sm font-medium mb-3 block">Date</Label>
+   548→            <div className="flex justify-center">
+   549→              <Calendar
+   550→                mode="single" selected={selectedDate} onSelect={setSelectedDate}
+   551→                disabled={{ before: new Date() }}
+   552→                className="rounded-xl border border-border"
+   553→                classNames={{ day_selected: 'bg-primary text-primary-foreground rounded-md', day_today: 'bg-accent text-accent-foreground rounded-md' }}
+   554→              />
+   555→            </div>
+   556→          </div>
+   557→          {selectedDate && (
+   558→            <div>
+   559→              <Label className="text-sm font-medium mb-3 block">
+   560→                Créneaux — {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
+   561→              </Label>
+   562→              {loadingSlots ? (
+   563→                <div className="grid grid-cols-3 gap-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-11 rounded-lg bg-secondary/50 animate-pulse" />)}</div>
+   564→              ) : (
+   565→                <div className="grid grid-cols-3 gap-2">
+   566→                  {slots.map((slot) => (
+   567→                    <button
+   568→                      key={slot.id} disabled={!slot.available} onClick={() => setSelectedSlot(slot)}
+   569→                      className={`relative p-2.5 rounded-lg border text-sm font-medium transition-all ${
+   570→                        !slot.available
+   571→                          ? 'border-border/50 bg-secondary/30 text-muted-foreground/50 cursor-not-allowed line-through'
+   572→                          : selectedSlot?.id === slot.id
+   573→                            ? 'border-primary bg-primary/15 text-primary'
+   574→                            : 'border-border bg-secondary/50 hover:border-primary/50'
+   575→                      }`}
+   576→                    >
+   577→                      {slot.time}
+   578→                      {!slot.available && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-destructive/60" />}
+   579→                    </button>
+   580→                  ))}
+   581→                </div>
+   582→              )}
+   583→            </div>
+   584→          )}
+   585→          {selectedSlot && (
+   586→            <Button className="w-full" size="lg" onClick={() => setStep('confirm')}>
+   587→              Continuer <ArrowRight className="ml-2 w-4 h-4" />
+   588→            </Button>
+   589→          )}
+   590→        </div>
+   591→      )}
+   592→
+   593→      {step === 'confirm' && selectedSlot && selectedDate && (
+   594→        <div className="space-y-5">
+   595→          <Card className="bg-card border-border">
+   596→            <CardContent className="p-5 space-y-3">
+   597→              <div className="flex justify-between text-sm">
+   598→                <span className="text-muted-foreground">Date</span>
+   599→                <span className="font-medium">{format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}</span>
+   600→              </div>
+   601→              <div className="flex justify-between text-sm">
+   602→                <span className="text-muted-foreground">Créneau</span>
+   603→                <span className="font-medium">{selectedSlot.label}</span>
+   604→              </div>
+   605→              <div className="flex justify-between text-sm">
+   606→                <span className="text-muted-foreground">Prix total</span>
+   607→                <span className="font-bold text-primary">25 000 FCFA</span>
+   608→              </div>
+   609→              <div className="flex justify-between text-sm">
+   610→                <span className="text-muted-foreground">Acompte</span>
+   611→                <span className="font-medium">5 000 FCFA</span>
+   612→              </div>
+   613→            </CardContent>
+   614→          </Card>
+   615→          <div className="flex gap-3">
+   616→            <Button variant="outline" className="flex-1" onClick={() => setStep('select')}>Retour</Button>
+   617→            <Button className="flex-1" disabled={isSubmitting} onClick={handleSubmit}>
+   618→              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4 mr-1.5" /> Confirmer</>}
+   619→            </Button>
+   620→          </div>
+   621→        </div>
+   622→      )}
+   623→    </div>
+   624→  );
+   625→}
+   626→
+   627→/* ═══════════════════════════════════════════
+   628→   Tab: Settings (Paramètres)
+   629→   ═══════════════════════════════════════════ */
+   630→
+   631→function SettingsTab({ phone, initialName }: { phone: string; initialName: string }) {
+   632→  const [name, setName] = useState(initialName);
+   633→  const [email, setEmail] = useState('');
+   634→  const [notifications, setNotifications] = useState(true);
+   635→  const [saving, setSaving] = useState(false);
+   636→  const [saved, setSaved] = useState(false);
+   637→  const [loading, setLoading] = useState(true);
+   638→
+   639→  useEffect(() => {
+   640→    (async () => {
+   641→      try {
+   642→        const res = await fetch(`/api/user/profile?phone=${encodeURIComponent(phone)}`);
+   643→        if (res.ok) {
+   644→          const data = await res.json();
+   645→          setName(data.profile.name);
+   646→          setEmail(data.profile.email);
+   647→          setNotifications(data.profile.notifications);
+   648→        }
+   649→      } catch { /* silent */ } finally {
+   650→        setLoading(false);
+   651→      }
+   652→    })();
+   653→  }, [phone]);
+   654→
+   655→  const handleSave = async () => {
+   656→    setSaving(true);
+   657→    setSaved(false);
+   658→    try {
+   659→      const res = await fetch('/api/user/profile', {
+   660→        method: 'PUT',
+   661→        headers: { 'Content-Type': 'application/json' },
+   662→        body: JSON.stringify({ phone, name, email, notifications }),
+   663→      });
+   664→      if (res.ok) setSaved(true);
+   665→    } catch { /* silent */ } finally {
+   666→      setSaving(false);
+   667→      setTimeout(() => setSaved(false), 3000);
+   668→    }
+   669→  };
+   670→
+   671→  const initials = name ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
+   672→
+   673→  if (loading) {
+   674→    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 rounded-2xl bg-card border border-border animate-pulse" />)}</div>;
+   675→  }
+   676→
+   677→  return (
+   678→    <div className="space-y-6">
+   679→      {/* Profile Header Card */}
+   680→      <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 border border-primary/20">
+   681→        <div className="flex items-center gap-4">
+   682→          <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold flex-shrink-0">
+   683→            {initials}
+   684→          </div>
+   685→          <div className="min-w-0">
+   686→            <h3 className="text-lg font-bold truncate">{name || 'Utilisateur'}</h3>
+   687→            <p className="text-sm text-muted-foreground">{phone}</p>
+   688→            {email && <p className="text-xs text-muted-foreground mt-0.5 truncate">{email}</p>}
+   689→          </div>
+   690→        </div>
+   691→      </div>
+   692→
+   693→      {/* Personal Information */}
+   694→      <div>
+   695→        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+   696→          <User className="w-4 h-4 text-primary" />
+   697→          Informations personnelles
+   698→        </h3>
+   699→        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+   700→          <div>
+   701→            <Label htmlFor="settings-name" className="text-xs text-muted-foreground">Nom complet</Label>
+   702→            <Input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5 h-11" placeholder="Votre nom" />
+   703→          </div>
+   704→          <div>
+   705→            <Label htmlFor="settings-phone" className="text-xs text-muted-foreground">Téléphone</Label>
+   706→            <Input id="settings-phone" value={phone} disabled className="mt-1.5 h-11 opacity-60 bg-muted/50" />
+   707→            <p className="text-[11px] text-muted-foreground mt-1">Le numéro de téléphone ne peut pas être modifié.</p>
+   708→          </div>
+   709→          <div>
+   710→            <Label htmlFor="settings-email" className="text-xs text-muted-foreground">Email (optionnel)</Label>
+   711→            <Input id="settings-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-11" placeholder="votre@email.com" />
+   712→          </div>
+   713→        </div>
+   714→      </div>
+   715→
+   716→      {/* Preferences */}
+   717→      <div>
+   718→        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+   719→          <Settings className="w-4 h-4 text-primary" />
+   720→          Préférences
+   721→        </h3>
+   722→        <div className="bg-card rounded-2xl border border-border divide-y divide-border">
+   723→          <div className="flex items-center justify-between p-4">
+   724→            <div className="flex items-center gap-3">
+   725→              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+   726→                <Bell className="w-4 h-4 text-primary" />
+   727→              </div>
+   728→              <div>
+   729→                <p className="text-sm font-medium">Notifications SMS</p>
+   730→                <p className="text-xs text-muted-foreground">Rappel avant votre créneau</p>
+   731→              </div>
+   732→            </div>
+   733→            <Switch checked={notifications} onCheckedChange={setNotifications} />
+   734→          </div>
+   735→        </div>
+   736→      </div>
+   737→
+   738→      {/* Save Button */}
+   739→      <Button className="w-full h-11" onClick={handleSave} disabled={saving}>
+   740→        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1.5" /> Enregistrer les modifications</>}
+   741→      </Button>
+   742→      {saved && (
+   743→        <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-emerald-600 text-center font-medium">
+   744→          ✓ Paramètres sauvegardés avec succès
+   745→        </motion.p>
+   746→      )}
+   747→    </div>
+   748→  );
+   749→}
+   750→
+   751→/* ═══════════════════════════════════════════
+   752→   Main UserPanel
+   753→   ═══════════════════════════════════════════ */
+   754→
+   755→export default function UserPanel({ onBack }: { onBack: () => void }) {
+   756→  const [phone, setPhone] = useState<string | null>(null);
+   757→  const [userName, setUserName] = useState('');
+   758→  const [activeTab, setActiveTab] = useState<Tab>('calendar');
+   759→  const [stats, setStats] = useState<UserStats | null>(null);
+   760→
+   761→  const handleLogin = useCallback((p: string) => {
+   762→    setPhone(p);
+   763→    // Try to get the profile name
+   764→    fetch(`/api/user/profile?phone=${encodeURIComponent(p)}`)
+   765→      .then(r => r.ok ? r.json() : null)
+   766→      .then(data => { if (data?.profile?.name) setUserName(data.profile.name); })
+   767→      .catch(() => {});
+   768→  }, []);
+   769→
+   770→  useEffect(() => {
+   771→    if (!phone) return;
+   772→    fetch(`/api/user/stats?phone=${encodeURIComponent(phone)}`)
+   773→      .then(r => r.ok ? r.json() : null)
+   774→      .then(setStats)
+   775→      .catch(() => {});
+   776→  }, [phone]);
+   777→
+   778→  const tabs: { key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+   779→    { key: 'calendar', label: 'Calendrier', icon: CalendarDays },
+   780→    { key: 'reservations', label: 'Réservations', icon: ClipboardList },
+   781→    { key: 'new', label: 'Réserver', icon: PlusCircle },
+   782→    { key: 'settings', label: 'Paramètres', icon: Settings },
+   783→  ];
+   784→
+   785→  // Phone login screen
+   786→  if (!phone) {
+   787→    return (
+   788→      <div className="min-h-screen flex flex-col">
+   789→        <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border">
+   790→          <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+   791→            <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground">
+   792→              <ArrowLeft className="w-4 h-4 mr-1.5" /> Retour
+   793→            </Button>
+   794→            <div className="flex items-center gap-2">
+   795→              <Image src="/logo.png" alt="ZalFoot" width={24} height={24} className="rounded-md" />
+   796→              <span className="text-base font-bold"><span className="text-primary">Zal</span>Foot</span>
+   797→            </div>
+   798→            <div className="w-16" />
+   799→          </div>
+   800→        </header>
+   801→        <main className="flex-1"><PhoneLogin onLogin={handleLogin} /></main>
+   802→      </div>
+   803→    );
+   804→  }
+   805→
+   806→  return (
+   807→    <div className="min-h-screen flex flex-col">
+   808→      {/* Header */}
+   809→      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-border">
+   810→        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+   811→          <Button variant="ghost" size="sm" onClick={onBack} className="text-muted-foreground hover:text-foreground">
+   812→            <ArrowLeft className="w-4 h-4 mr-1.5" /> Retour
+   813→          </Button>
+   814→          <div className="flex items-center gap-2">
+   815→            <Image src="/logo.png" alt="ZalFoot" width={24} height={24} className="rounded-md" />
+   816→            <span className="text-base font-bold"><span className="text-primary">Zal</span>Foot</span>
+   817→          </div>
+   818→          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+   819→            <Phone className="w-3 h-3" />
+   820→            <span className="hidden sm:inline">{phone}</span>
+   821→          </div>
+   822→        </div>
+   823→      </header>
+   824→
+   825→      <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6">
+   826→        {/* Welcome + Stats */}
+   827→        {stats && (
+   828→          <div className="mb-6">
+   829→            <h1 className="text-xl font-bold">
+   830→              {userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Bonjour'} !
+   831→            </h1>
+   832→            <div className="grid grid-cols-3 gap-3 mt-4">
+   833→              <div className="bg-card border border-border rounded-xl p-3 text-center">
+   834→                <p className="text-lg font-bold text-primary">{stats.upcomingCount}</p>
+   835→                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">À venir</p>
+   836→              </div>
+   837→              <div className="bg-card border border-border rounded-xl p-3 text-center">
+   838→                <p className="text-lg font-bold text-emerald-600">{stats.byStatus.completed}</p>
+   839→                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Terminées</p>
+   840→              </div>
+   841→              <div className="bg-card border border-border rounded-xl p-3 text-center">
+   842→                <p className="text-lg font-bold">{stats.totalBookings}</p>
+   843→                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total</p>
+   844→              </div>
+   845→            </div>
+   846→          </div>
+   847→        )}
+   848→
+   849→        {/* Tab Bar */}
+   850→        <div className="flex bg-secondary rounded-lg p-0.5 mb-6">
+   851→          {tabs.map((t) => (
+   852→            <button
+   853→              key={t.key}
+   854→              onClick={() => setActiveTab(t.key)}
+   855→              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium rounded-md transition-all ${
+   856→                activeTab === t.key
+   857→                  ? 'bg-primary text-primary-foreground shadow-sm'
+   858→                  : 'text-muted-foreground hover:text-foreground'
+   859→              }`}
+   860→            >
+   861→              <t.icon className="w-3.5 h-3.5" />
+   862→              <span className="hidden sm:inline">{t.label}</span>
+   863→            </button>
+   864→          ))}
+   865→        </div>
+   866→
+   867→        {/* Tab Content */}
+   868→        <AnimatePresence mode="wait">
+   869→          <motion.div
+   870→            key={activeTab}
+   871→            initial={{ opacity: 0, y: 10 }}
+   872→            animate={{ opacity: 1, y: 0 }}
+   873→            exit={{ opacity: 0, y: -10 }}
+   874→            transition={{ duration: 0.2 }}
+   875→          >
+   876→            {activeTab === 'calendar' && <CalendarTab phone={phone} />}
+   877→            {activeTab === 'reservations' && <ReservationsTab phone={phone} />}
+   878→            {activeTab === 'new' && <NewReservationTab phone={phone} name={userName || 'Utilisateur'} onCreated={() => {
+   879→              // Refresh stats
+   880→              fetch(`/api/user/stats?phone=${encodeURIComponent(phone)}`)
+   881→                .then(r => r.ok ? r.json() : null)
+   882→                .then(setStats)
+   883→                .catch(() => {});
+   884→            }} />}
+   885→            {activeTab === 'settings' && <SettingsTab phone={phone} initialName={userName} />}
+   886→          </motion.div>
+   887→        </AnimatePresence>
+   888→      </div>
+   889→
+   890→      {/* Footer */}
+   891→      <footer className="border-t border-border py-5 mt-auto">
+   892→        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-center">
+   893→          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ZalFoot — Mon espace</p>
+   894→        </div>
+   895→      </footer>
+   896→    </div>
+   897→  );
+   898→}
+   899→
