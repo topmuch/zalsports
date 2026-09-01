@@ -62,11 +62,22 @@ interface AdminAccount {
   createdAt: string;
 }
 
+export interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  duration: string;
+  features: string;
+  active: boolean;
+  createdAt: string;
+}
+
 // ─── In-Memory Stores (loaded from disk on startup) ──────────────
 const bookings = new Map<string, Booking>();
 const userProfiles = new Map<string, UserProfile>();
 const slotConfig = new Map<string, string[]>();
 const adminAccounts = new Map<string, AdminAccount>();
+const plans = new Map<string, Plan>();
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
@@ -90,7 +101,11 @@ function loadFromDisk() {
   const adminsArr: AdminAccount[] = loadJSON('admins.json', []);
   for (const a of adminsArr) adminAccounts.set(a.username, a);
 
-  console.log(`[db] Loaded: ${bookings.size} bookings, ${userProfiles.size} profiles, ${slotConfig.size} slot configs, ${adminAccounts.size} admins`);
+  // Plans
+  const plansArr: Plan[] = loadJSON('plans.json', []);
+  for (const p of plansArr) plans.set(p.id, p);
+
+  console.log(`[db] Loaded: ${bookings.size} bookings, ${userProfiles.size} profiles, ${slotConfig.size} slot configs, ${adminAccounts.size} admins, ${plans.size} plans`);
 }
 
 // ─── Save to disk ──────────────────────────────────────────────
@@ -110,6 +125,10 @@ function saveSlots() {
 
 function saveAdmins() {
   saveJSON('admins.json', Array.from(adminAccounts.values()));
+}
+
+function savePlans() {
+  saveJSON('plans.json', Array.from(plans.values()));
 }
 
 // ─── Seed sample data (only if no data exists) ────────────────────
@@ -323,6 +342,33 @@ export const db = {
       const account = adminAccounts.get(username);
       if (!account) return false;
       return account.password === password;
+    },
+  },
+  plan: {
+    findAll: async () => Array.from(plans.values()),
+    findById: async (id: string) => plans.get(id) || null,
+    create: async (data: { name: string; price: number; duration: string; features: string }) => {
+      const id = generateId();
+      const plan: Plan = { id, name: data.name, price: data.price, duration: data.duration, features: data.features || '', active: true, createdAt: new Date().toISOString() };
+      plans.set(id, plan);
+      savePlans();
+      return plan;
+    },
+    update: async (id: string, data: Partial<Plan>) => {
+      const plan = plans.get(id);
+      if (!plan) return null;
+      if (data.name !== undefined) plan.name = data.name;
+      if (data.price !== undefined) plan.price = data.price;
+      if (data.duration !== undefined) plan.duration = data.duration;
+      if (data.features !== undefined) plan.features = data.features;
+      if (data.active !== undefined) plan.active = data.active;
+      savePlans();
+      return plan;
+    },
+    delete: async (id: string) => {
+      const existed = plans.delete(id);
+      if (existed) savePlans();
+      return existed;
     },
   },
 };
