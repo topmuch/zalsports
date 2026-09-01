@@ -1,0 +1,845 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useRef, useCallback } from 'react';
+     4→import Image from 'next/image';
+     5→import { motion, useInView, AnimatePresence } from 'framer-motion';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import { Input } from '@/components/ui/input';
+     9→import { Label } from '@/components/ui/label';
+    10→
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from '@/components/ui/select';
+    18→import {
+    19→  MapPin,
+    20→  Clock,
+    21→  Users,
+    22→  Zap,
+    23→  ChevronDown,
+    24→  CalendarDays,
+    25→  ShieldCheck,
+    26→  ArrowRight,
+    27→  Menu,
+    28→  X,
+    29→  LogIn,
+    30→  CreditCard,
+    31→  User,
+    32→  Star,
+    33→  Search,
+    34→  Check,
+    35→} from 'lucide-react';
+    36→import { format, addDays } from 'date-fns';
+    37→import { fr } from 'date-fns/locale';
+    38→import Dashboard from '@/components/dashboard';
+    39→import UserPanel from '@/components/user-panel';
+    40→import ContactPage from '@/components/pages/ContactPage';
+    41→import HowItWorksPage from '@/components/pages/HowItWorksPage';
+    42→import PricingPage from '@/components/pages/PricingPage';
+    43→import ConceptPage from '@/components/pages/ConceptPage';
+    44→import AboutPage from '@/components/pages/AboutPage';
+    45→import PrivacyPage from '@/components/pages/PrivacyPage';
+    46→import CalendarPage from '@/components/pages/CalendarPage';
+    47→import BookingPage from '@/components/pages/BookingPage';
+    48→
+    49→/* ═══════════════════════════════════════════
+    50→   Types & Constants
+    51→   ═══════════════════════════════════════════ */
+    52→
+    53→type PageView = 'landing' | 'booking' | 'dashboard' | 'user' | 'contact' | 'how-it-works' | 'pricing' | 'concept' | 'about' | 'privacy' | 'calendar';
+    54→
+    55→const NAV_LINKS = [
+    56→  { label: 'Terrain', href: '#terrains' },
+    57→  { label: 'Calendrier', view: 'calendar' as PageView },
+    58→  { label: 'Comment ça marche', view: 'how-it-works' as PageView },
+    59→  { label: 'Tarifs', href: '#pricing' },
+    60→  { label: 'Concept', view: 'concept' as PageView },
+    61→];
+    62→
+    63→const FOOTER_LINKS = [
+    64→  { label: 'Contact', view: 'contact' as PageView },
+    65→  { label: 'Confidentialité', view: 'privacy' as PageView },
+    66→  { label: 'Mentions légales', view: 'about' as PageView },
+    67→  { label: 'À propos', view: 'about' as PageView },
+    68→];
+    69→
+    70→const HERO_STATS = [
+    71→  { label: '1 Terrain', icon: MapPin },
+    72→  { label: '14 Joueurs max', icon: Users },
+    73→  { label: '08:00–00:00', icon: Clock },
+    74→  { label: 'Wave & Orange Money', icon: CreditCard },
+    75→];
+    76→
+    77→const BANNER_STATS = [
+    78→  { value: 1250, suffix: '+', label: 'Matchs joués' },
+    79→  { value: 98, suffix: '%', label: 'Satisfaction' },
+    80→  { value: 14, suffix: '', label: 'Joueurs max' },
+    81→  { value: 7, suffix: 'j/7', label: 'Disponible' },
+    82→];
+    83→
+    84→const STEPS = [
+    85→  {
+    86→    icon: CalendarDays,
+    87→    number: '01',
+    88→    title: 'Choisissez votre créneau',
+    89→    description: 'Consultez les disponibilités et sélectionnez votre date et horaire.',
+    90→  },
+    91→  {
+    92→    icon: ShieldCheck,
+    93→    number: '02',
+    94→    title: 'Réservez en 30 secondes',
+    95→    description: 'Entrez votre nom et numéro — aucun compte requis.',
+    96→  },
+    97→  {
+    98→    icon: CreditCard,
+    99→    number: '03',
+   100→    title: 'Payez l\'acompte',
+   101→    description: 'Acompte en ligne via Wave ou Orange Money. Le solde sur place.',
+   102→  },
+   103→];
+   104→
+   105→const FEATURES = [
+   106→  {
+   107→    icon: Clock,
+   108→    title: 'Réservation rapide',
+   109→    description: 'Réservez votre créneau en 30 secondes, sans créer de compte.',
+   110→  },
+   111→  {
+   112→    icon: ShieldCheck,
+   113→    title: 'Paiement sécurisé',
+   114→    description: 'Payez votre acompte en toute sécurité via Wave ou Orange Money.',
+   115→  },
+   116→  {
+   117→    icon: MapPin,
+   118→    title: 'Terrain de qualité',
+   119→    description: 'Synthétique dernière génération, éclairage LED, vestiaires modernes.',
+   120→  },
+   121→  {
+   122→    icon: CalendarDays,
+   123→    title: 'Disponible 7j/7',
+   124→    description: 'Ouvert tous les jours de 08h à 00h pour votre plaisir.',
+   125→  },
+   126→];
+   127→
+   128→const TESTIMONIALS = [
+   129→  {
+   130→    name: 'Mamadou Diop',
+   131→    role: 'Capitaine – Équipe Diarama',
+   132→    rating: 5,
+   133→    quote: 'La réservation est super simple, même mon père pourrait le faire. Le terrain est impeccable et l\'éclairage top.',
+   134→  },
+   135→  {
+   136→    name: 'Ibrahima Fall',
+   137→    role: 'Joueur régulier',
+   138→    rating: 5,
+   139→    quote: 'Le paiement par Wave est très pratique. Plus besoin de chercher du liquide. J\'utilise ZalFoot chaque semaine.',
+   140→  },
+   141→  {
+   142→    name: 'Aminata Sow',
+   143→    role: 'Organisatrice de tournois',
+   144→    title: 'Organisatrice',
+   145→    rating: 5,
+   146→    quote: 'La qualité du terrain synthétique est au-dessus de ce qu\'on trouve ailleurs. Les vestiaires sont propres et modernes.',
+   147→  },
+   148→];
+   149→
+   150→const VENUE = {
+   151→  name: 'ZalFoot Arena',
+   152→  location: 'Croisement Kaolack - Mbour, Sénégal',
+   153→  description:
+   154→    'Terrain synthétique dernière génération avec éclairage LED, vestiaires modernes et buvette.',
+   155→  pricePerHour: '25 000 FCFA',
+   156→  deposit: '5 000 FCFA',
+   157→  capacity: '14 joueurs',
+   158→  hours: '08:00 – 00:00',
+   159→};
+   160→
+   161→/* ═══════════════════════════════════════════
+   162→   Animated Counter
+   163→   ═══════════════════════════════════════════ */
+   164→
+   165→function AnimatedCounter({ value, suffix, inView }: { value: number; suffix: string; inView: boolean }) {
+   166→  const [count, setCount] = useState(0);
+   167→  useEffect(() => {
+   168→    if (!inView) return;
+   169→    let start = 0;
+   170→    const step = Math.max(1, Math.floor(value / 125));
+   171→    const timer = setInterval(() => {
+   172→      start += step;
+   173→      if (start >= value) {
+   174→        setCount(value);
+   175→        clearInterval(timer);
+   176→      } else {
+   177→        setCount(start);
+   178→      }
+   179→    }, 16);
+   180→    return () => clearInterval(timer);
+   181→  }, [inView, value]);
+   182→
+   183→  return (
+   184→    <span>
+   185→      {count.toLocaleString('fr-FR')}
+   186→      {suffix}
+   187→    </span>
+   188→  );
+   189→}
+   190→
+   191→/* ═══════════════════════════════════════════
+   192→   Section Wrapper
+   193→   ═══════════════════════════════════════════ */
+   194→
+   195→function Section({ children, className = '', id }: { children: React.ReactNode; className?: string; id?: string }) {
+   196→  const ref = useRef<HTMLDivElement>(null);
+   197→  const isInView = useInView(ref, { once: true, margin: '-60px' });
+   198→  return (
+   199→    <motion.section
+   200→      ref={ref}
+   201→      id={id}
+   202→      className={className}
+   203→      initial={{ opacity: 0, y: 30 }}
+   204→      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+   205→      transition={{ duration: 0.6, ease: 'easeOut' }}
+   206→    >
+   207→      {children}
+   208→    </motion.section>
+   209→  );
+   210→}
+   211→
+   212→/* ═══════════════════════════════════════════
+   213→   Main Page
+   214→   ═══════════════════════════════════════════ */
+   215→
+   216→export default function HomePage() {
+   217→  const [view, setView] = useState<PageView>('landing');
+   218→  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   219→  const [scrolled, setScrolled] = useState(false);
+   220→
+   221→  const handleBackToLanding = useCallback(() => {
+   222→    setView('landing');
+   223→    window.scrollTo({ top: 0, behavior: 'smooth' });
+   224→  }, []);
+   225→
+   226→  const navigateTo = useCallback((v: PageView) => {
+   227→    setView(v);
+   228→    setMobileMenuOpen(false);
+   229→    window.scrollTo({ top: 0 });
+   230→  }, []);
+   231→
+   232→  useEffect(() => {
+   233→    const handleScroll = () => setScrolled(window.scrollY > 50);
+   234→    window.addEventListener('scroll', handleScroll, { passive: true });
+   235→    return () => window.removeEventListener('scroll', handleScroll);
+   236→  }, []);
+   237→
+   238→  const bannerStatsRef = useRef<HTMLDivElement>(null);
+   239→  const bannerStatsInView = useInView(bannerStatsRef, { once: true });
+   240→
+   241→  if (view === 'booking') {
+   242→    return <BookingPage onBack={handleBackToLanding} />;
+   243→  }
+   244→  if (view === 'dashboard') {
+   245→    return <Dashboard onBack={handleBackToLanding} />;
+   246→  }
+   247→  if (view === 'user') {
+   248→    return <UserPanel onBack={handleBackToLanding} />;
+   249→  }
+   250→  if (view === 'contact') {
+   251→    return <ContactPage onBack={handleBackToLanding} />;
+   252→  }
+   253→  if (view === 'how-it-works') {
+   254→    return <HowItWorksPage onBack={handleBackToLanding} />;
+   255→  }
+   256→  if (view === 'pricing') {
+   257→    return <PricingPage onBack={handleBackToLanding} onBook={() => navigateTo('booking')} />;
+   258→  }
+   259→  if (view === 'concept') {
+   260→    return <ConceptPage onBack={handleBackToLanding} />;
+   261→  }
+   262→  if (view === 'about') {
+   263→    return <AboutPage onBack={handleBackToLanding} />;
+   264→  }
+   265→  if (view === 'privacy') {
+   266→    return <PrivacyPage onBack={handleBackToLanding} />;
+   267→  }
+   268→  if (view === 'calendar') {
+   269→    return <CalendarPage onBack={handleBackToLanding} />;
+   270→  }
+   271→
+   272→  return (
+   273→    <div className="min-h-screen flex flex-col bg-white">
+   274→      {/* ═══════ 1. NAVBAR ═══════ */}
+   275→      <header
+   276→        className={`fixed top-0 left-0 right-0 z-50 h-20 transition-all duration-300 ${
+   277→          scrolled
+   278→            ? 'bg-white/95 backdrop-blur-xl shadow-sm'
+   279→            : 'bg-white/95 backdrop-blur-xl'
+   280→        }`}
+   281→      >
+   282→        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+   283→          {/* Logo only – no text */}
+   284→          <a href="#" className="flex items-center" onClick={() => { setView('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+   285→            <Image src="/logo.png" alt="ZalFoot" width={96} height={96} className="rounded-lg w-[72px] h-[72px] sm:w-[96px] sm:h-[96px]" />
+   286→          </a>
+   287→
+   288→          {/* Desktop nav */}
+   289→          <div className="hidden lg:flex items-center gap-6">
+   290→            {NAV_LINKS.map((link) =>
+   291→              'view' in link && link.view ? (
+   292→                <button
+   293→                  key={link.label}
+   294→                  onClick={() => navigateTo(link.view!)}
+   295→                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+   296→                >
+   297→                  {link.label}
+   298→                </button>
+   299→              ) : (
+   300→                <a
+   301→                  key={link.label}
+   302→                  href={(link as { href: string }).href}
+   303→                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+   304→                >
+   305→                  {link.label}
+   306→                </a>
+   307→              ),
+   308→            )}
+   309→            <button
+   310→              onClick={() => navigateTo('dashboard')}
+   311→              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+   312→            >
+   313→              <LogIn className="w-4 h-4" />
+   314→              Connexion
+   315→            </button>
+   316→            <Button size="sm" className="glow-green" onClick={() => navigateTo('booking')}>
+   317→              <Zap className="w-4 h-4 mr-1.5" />
+   318→              Réserver
+   319→            </Button>
+   320→          </div>
+   321→
+   322→          {/* Mobile hamburger */}
+   323→          <button
+   324→            className="lg:hidden p-2 text-foreground"
+   325→            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+   326→            aria-label="Menu"
+   327→          >
+   328→            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+   329→          </button>
+   330→        </nav>
+   331→
+   332→        {/* Mobile menu */}
+   333→        <AnimatePresence>
+   334→          {mobileMenuOpen && (
+   335→            <motion.div
+   336→              initial={{ opacity: 0, height: 0 }}
+   337→              animate={{ opacity: 1, height: 'auto' }}
+   338→              exit={{ opacity: 0, height: 0 }}
+   339→              className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-border overflow-hidden"
+   340→            >
+   341→              <div className="px-4 py-4 space-y-1">
+   342→                {NAV_LINKS.map((link) =>
+   343→                  'view' in link && link.view ? (
+   344→                    <button
+   345→                      key={link.label}
+   346→                      onClick={() => navigateTo(link.view!)}
+   347→                      className="block w-full text-left py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+   348→                    >
+   349→                      {link.label}
+   350→                    </button>
+   351→                  ) : (
+   352→                    <a
+   353→                      key={link.label}
+   354→                      href={(link as { href: string }).href}
+   355→                      onClick={() => setMobileMenuOpen(false)}
+   356→                      className="block w-full text-left py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+   357→                    >
+   358→                      {link.label}
+   359→                    </a>
+   360→                  ),
+   361→                )}
+   362→                <div className="border-t border-border my-2" />
+   363→                <button
+   364→                  onClick={() => navigateTo('user')}
+   365→                  className="flex items-center gap-1.5 w-full text-left py-3 text-sm text-muted-foreground hover:text-primary transition-colors"
+   366→                >
+   367→                  <User className="w-4 h-4" /> Mon espace
+   368→                </button>
+   369→                <button
+   370→                  onClick={() => navigateTo('dashboard')}
+   371→                  className="flex items-center gap-1.5 w-full text-left py-3 text-sm text-muted-foreground hover:text-primary transition-colors"
+   372→                >
+   373→                  <LogIn className="w-4 h-4" /> Connexion
+   374→                </button>
+   375→                <Button
+   376→                  className="w-full glow-green mt-2"
+   377→                  onClick={() => {
+   378→                    setMobileMenuOpen(false);
+   379→                    navigateTo('booking');
+   380→                  }}
+   381→                >
+   382→                  <Zap className="w-4 h-4 mr-1.5" /> Réserver
+   383→                </Button>
+   384→              </div>
+   385→            </motion.div>
+   386→          )}
+   387→        </AnimatePresence>
+   388→      </header>
+   389→
+   390→      {/* ═══════ MAIN CONTENT ═══════ */}
+   391→      <main className="flex-1 pt-20">
+   392→
+   393→        {/* ═══════ 2. HERO SECTION (terrain bg, dark overlay) ═══════ */
+   394→        <section className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[640px] flex items-center overflow-hidden">
+   395→          {/* Background image */}
+   396→          <Image
+   397→            src="/hero-bg.png"
+   398→            alt="Terrain de football"
+   399→            fill
+   400→            className="object-cover"
+   401→            priority
+   402→          />
+   403→          {/* Dark overlay gradient */}
+   404→          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/80 z-[1]" />
+   405→
+   406→          {/* Content */}
+   407→          <div className="relative z-[2] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center w-full">
+   408→            {/* Badge */}
+   409→            <motion.div
+   410→              initial={{ opacity: 0, y: 20 }}
+   411→              animate={{ opacity: 1, y: 0 }}
+   412→              transition={{ duration: 0.5 }}
+   413→            >
+   414→              <Badge variant="outline" className="mb-6 px-4 py-1.5 text-sm font-medium border-white/30 text-white bg-white/10">
+   415→                ⚽ Football · Sénégal
+   416→              </Badge>
+   417→            </motion.div>
+   418→
+   419→            {/* Headline */}
+   420→            <motion.h1
+   421→              className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.15] text-white max-w-3xl mx-auto"
+   422→              initial={{ opacity: 0, y: 20 }}
+   423→              animate={{ opacity: 1, y: 0 }}
+   424→              transition={{ duration: 0.6, delay: 0.1 }}
+   425→            >
+   426→              Réservez votre terrain de football{' '}
+   427→              <span className="text-green-400">en 30 secondes</span>
+   428→            </motion.h1>
+   429→
+   430→            {/* Subtitle */}
+   431→            <motion.p
+   432→              className="mt-5 text-base sm:text-lg text-white/80 max-w-xl mx-auto leading-relaxed"
+   433→              initial={{ opacity: 0, y: 20 }}
+   434→              animate={{ opacity: 1, y: 0 }}
+   435→              transition={{ duration: 0.6, delay: 0.2 }}
+   436→            >
+   437→              Terrain synthétique, éclairage LED, vestiaires. Aucun compte requis.
+   438→            </motion.p>
+   439→
+   440→            {/* 2 CTAs */}
+   441→            <motion.div
+   442→              className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+   443→              initial={{ opacity: 0, y: 20 }}
+   444→              animate={{ opacity: 1, y: 0 }}
+   445→              transition={{ duration: 0.6, delay: 0.3 }}
+   446→            >
+   447→              <Button size="lg" className="text-base px-8 glow-green" onClick={() => navigateTo('booking')}>
+   448→                <Zap className="w-4 h-4 mr-2" />
+   449→                Réserver maintenant
+   450→              </Button>
+   451→              <Button size="lg" variant="outline" className="text-base px-8 border-white/40 text-white hover:bg-white/10 hover:text-white" onClick={() => navigateTo('how-it-works')}>
+   452→                Comment ça marche
+   453→              </Button>
+   454→            </motion.div>
+   455→
+   456→            {/* Stats row */}
+   457→            <motion.div
+   458→              className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
+   459→              initial={{ opacity: 0, y: 20 }}
+   460→              animate={{ opacity: 1, y: 0 }}
+   461→              transition={{ duration: 0.6, delay: 0.4 }}
+   462→            >
+   463→              {HERO_STATS.map((stat, i) => (
+   464→                <div key={stat.label} className="flex items-center gap-2 text-sm text-white/80">
+   465→                  <stat.icon className="w-4 h-4 text-green-400" />
+   466→                  <span>{stat.label}</span>
+   467→                  {i < HERO_STATS.length - 1 && (
+   468→                    <span className="hidden sm:inline text-white/30 mx-1">|</span>
+   469→                  )}
+   470→                </div>
+   471→              ))}
+   472→            </motion.div>
+   473→
+   474→            {/* City tag pill */}
+   475→            <motion.div
+   476→              className="mt-6"
+   477→              initial={{ opacity: 0, y: 10 }}
+   478→              animate={{ opacity: 1, y: 0 }}
+   479→              transition={{ duration: 0.5, delay: 0.5 }}
+   480→            >
+   481→              <Badge variant="secondary" className="px-4 py-2 text-sm font-normal gap-1.5 bg-white/10 text-white border border-white/20 hover:bg-white/20">
+   482→                <MapPin className="w-3.5 h-3.5 text-green-400" />
+   483→                Croisement Kaolack - Mbour
+   484→              </Badge>
+   485→            </motion.div>
+   486→          </div>
+   487→        </section>
+   488→
+   489→        {/* ═══════ 3. QUICK SEARCH BAR ═══════ */}
+   490→        <section className="bg-white pb-16 sm:pb-20">
+   491→          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+   492→            <motion.div
+   493→              className="bg-white rounded-2xl shadow-lg shadow-black/[0.06] border border-border p-5 sm:p-6"
+   494→              initial={{ opacity: 0, y: 20 }}
+   495→              whileInView={{ opacity: 1, y: 0 }}
+   496→              viewport={{ once: true }}
+   497→              transition={{ duration: 0.5 }}
+   498→            >
+   499→              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+   500→                {/* Sport select */}
+   501→                <div>
+   502→                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Sport</Label>
+   503→                  <Select defaultValue="football">
+   504→                    <SelectTrigger className="w-full">
+   505→                      <SelectValue />
+   506→                    </SelectTrigger>
+   507→                    <SelectContent>
+   508→                      <SelectItem value="football">Football</SelectItem>
+   509→                      <SelectItem value="basketball">Basketball</SelectItem>
+   510→                      <SelectItem value="futsal">Futsal</SelectItem>
+   511→                    </SelectContent>
+   512→                  </Select>
+   513→                </div>
+   514→
+   515→                {/* Date */}
+   516→                <div>
+   517→                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date</Label>
+   518→                  <Input
+   519→                    type="date"
+   520→                    defaultValue={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+   521→                    min={format(new Date(), 'yyyy-MM-dd')}
+   522→                  />
+   523→                </div>
+   524→
+   525→                {/* Heure */}
+   526→                <div>
+   527→                  <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Heure</Label>
+   528→                  <Select defaultValue="18:00">
+   529→                    <SelectTrigger className="w-full">
+   530→                      <SelectValue />
+   531→                    </SelectTrigger>
+   532→                    <SelectContent>
+   533→                      {Array.from({ length: 15 }, (_, i) => i + 8).map((h) => (
+   534→                        <SelectItem key={h} value={`${h.toString().padStart(2, '0')}:00`}>
+   535→                          {h.toString().padStart(2, '0')}:00
+   536→                        </SelectItem>
+   537→                      ))}
+   538→                    </SelectContent>
+   539→                  </Select>
+   540→                </div>
+   541→
+   542→                {/* Search button */}
+   543→                <Button className="w-full sm:w-auto" size="lg" onClick={() => navigateTo('booking')}>
+   544→                  <Search className="w-4 h-4 mr-2" />
+   545→                  Rechercher
+   546→                </Button>
+   547→              </div>
+   548→            </motion.div>
+   549→          </div>
+   550→        </section>
+   551→
+   552→        {/* ═══════ 4. STATS BANNER (green bg) ═══════ */}
+   553→        <section ref={bannerStatsRef} className="bg-primary">
+   554→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+   555→            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-6">
+   556→              {BANNER_STATS.map((stat, i) => (
+   557→                <motion.div
+   558→                  key={stat.label}
+   559→                  className="text-center"
+   560→                  initial={{ opacity: 0, y: 20 }}
+   561→                  animate={bannerStatsInView ? { opacity: 1, y: 0 } : {}}
+   562→                  transition={{ duration: 0.5, delay: i * 0.12 }}
+   563→                >
+   564→                  <p className="text-3xl sm:text-4xl font-extrabold text-primary-foreground">
+   565→                    <AnimatedCounter value={stat.value} suffix={stat.suffix} inView={bannerStatsInView} />
+   566→                  </p>
+   567→                  <p className="mt-1.5 text-sm text-primary-foreground/80 font-medium">
+   568→                    {stat.label}
+   569→                  </p>
+   570→                </motion.div>
+   571→              ))}
+   572→            </div>
+   573→          </div>
+   574→        </section>
+   575→
+   576→        {/* ═══════ 5. HOW IT WORKS ═══════ */}
+   577→        <Section className="py-16 sm:py-24">
+   578→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   579→            <div className="text-center mb-12 sm:mb-14">
+   580→              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
+   581→                Simple & rapide
+   582→              </p>
+   583→              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+   584→                Comment ça marche ?
+   585→              </h2>
+   586→              <p className="mt-3 text-muted-foreground max-w-md mx-auto">
+   587→                En 3 étapes simples, réservez votre créneau.
+   588→              </p>
+   589→            </div>
+   590→
+   591→            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+   592→              {STEPS.map((s, i) => (
+   593→                <motion.div
+   594→                  key={s.number}
+   595→                  className="step-card bg-white rounded-2xl p-6 sm:p-8 relative"
+   596→                  initial={{ opacity: 0, y: 30 }}
+   597→                  whileInView={{ opacity: 1, y: 0 }}
+   598→                  viewport={{ once: true, margin: '-60px' }}
+   599→                  transition={{ duration: 0.5, delay: i * 0.15 }}
+   600→                >
+   601→                  {/* Step number badge */}
+   602→                  <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-bold mb-4">
+   603→                    {s.number}
+   604→                  </div>
+   605→                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+   606→                    <s.icon className="w-6 h-6 text-primary" />
+   607→                  </div>
+   608→                  <h3 className="text-lg font-bold mb-2 text-foreground">{s.title}</h3>
+   609→                  <p className="text-sm text-muted-foreground leading-relaxed">{s.description}</p>
+   610→                </motion.div>
+   611→              ))}
+   612→            </div>
+   613→          </div>
+   614→        </Section>
+   615→
+   616→        {/* ═══════ 6. FEATURES / ADVANTAGES ═══════ */}
+   617→        <Section className="py-16 sm:py-24 bg-secondary/40">
+   618→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   619→            <div className="text-center mb-12 sm:mb-14">
+   620→              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+   621→                Pourquoi ZalFoot Arena ?
+   622→              </h2>
+   623→            </div>
+   624→
+   625→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+   626→              {FEATURES.map((f, i) => (
+   627→                <motion.div
+   628→                  key={f.title}
+   629→                  className="bg-white rounded-2xl p-6 sm:p-8 border border-border/60"
+   630→                  initial={{ opacity: 0, y: 20 }}
+   631→                  whileInView={{ opacity: 1, y: 0 }}
+   632→                  viewport={{ once: true, margin: '-40px' }}
+   633→                  transition={{ duration: 0.5, delay: i * 0.1 }}
+   634→                >
+   635→                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+   636→                    <f.icon className="w-6 h-6 text-primary" />
+   637→                  </div>
+   638→                  <h3 className="text-lg font-bold mb-2 text-foreground">{f.title}</h3>
+   639→                  <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+   640→                </motion.div>
+   641→              ))}
+   642→            </div>
+   643→          </div>
+   644→        </Section>
+   645→
+   646→        {/* ═══════ 7. VENUE SECTION ═══════ */}
+   647→        <Section id="terrains" className="py-16 sm:py-24">
+   648→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   649→            <div className="text-center mb-12 sm:mb-14">
+   650→              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{VENUE.name}</h2>
+   651→            </div>
+   652→
+   653→            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+   654→              {/* Terrain images — 2 photos stacked */}
+   655→              <div className="lg:col-span-3 space-y-4">
+   656→                <div className="relative rounded-2xl overflow-hidden aspect-[16/10]">
+   657→                  <Image
+   658→                    src="/terrain1.jpg"
+   659→                    alt={`${VENUE.name} — Vue 1`}
+   660→                    fill
+   661→                    className="object-cover"
+   662→                    sizes="(max-width: 1024px) 100vw, 60vw"
+   663→                  />
+   664→                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+   665→                  <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5">
+   666→                    <MapPin className="w-3.5 h-3.5 text-primary" />
+   667→                    <span className="text-xs font-medium text-foreground">{VENUE.location}</span>
+   668→                  </div>
+   669→                </div>
+   670→                <div className="relative rounded-2xl overflow-hidden aspect-[16/10]">
+   671→                  <Image
+   672→                    src="/terrain2.jpg"
+   673→                    alt={`${VENUE.name} — Vue 2`}
+   674→                    fill
+   675→                    className="object-cover"
+   676→                    sizes="(max-width: 1024px) 100vw, 60vw"
+   677→                  />
+   678→                </div>
+   679→              </div>
+   680→
+   681→              {/* Venue info card */}
+   682→              <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6 space-y-4">
+   683→                <p className="text-sm text-muted-foreground leading-relaxed">{VENUE.description}</p>
+   684→                <div className="space-y-3">
+   685→                  {[
+   686→                    { label: 'Emplacement', value: VENUE.location, icon: MapPin },
+   687→                    { label: 'Prix / heure', value: VENUE.pricePerHour, icon: CreditCard },
+   688→                    { label: 'Capacité', value: VENUE.capacity, icon: Users },
+   689→                    { label: 'Horaires', value: VENUE.hours, icon: Clock },
+   690→                  ].map((item) => (
+   691→                    <div key={item.label} className="flex items-start gap-3">
+   692→                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+   693→                        <item.icon className="w-4 h-4 text-primary" />
+   694→                      </div>
+   695→                      <div>
+   696→                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{item.label}</p>
+   697→                        <p className="text-sm font-semibold text-foreground mt-0.5">{item.value}</p>
+   698→                      </div>
+   699→                    </div>
+   700→                  ))}
+   701→                </div>
+   702→                <Button size="lg" className="w-full glow-green mt-2" onClick={() => navigateTo('booking')}>
+   703→                  Voir les créneaux
+   704→                  <ArrowRight className="ml-2 w-4 h-4" />
+   705→                </Button>
+   706→              </div>
+   707→            </div>
+   708→          </div>
+   709→        </Section>
+   710→
+   711→        {/* ═══════ 8. PRICING SECTION ═══════ */}
+   712→        <Section id="pricing" className="py-16 sm:py-24 bg-secondary/40">
+   713→          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   714→            <div className="text-center mb-12 sm:mb-14">
+   715→              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Un prix, pas de surprise</h2>
+   716→            </div>
+   717→
+   718→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+   719→              {/* Full price card */}
+   720→              <motion.div
+   721→                className="bg-white rounded-2xl border border-border p-6 sm:p-8 text-center"
+   722→                initial={{ opacity: 0, y: 20 }}
+   723→                whileInView={{ opacity: 1, y: 0 }}
+   724→                viewport={{ once: true }}
+   725→                transition={{ duration: 0.5 }}
+   726→              >
+   727→                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+   728→                  <Clock className="w-6 h-6 text-primary" />
+   729→                </div>
+   730→                <h3 className="text-lg font-bold mb-2 text-foreground">1 heure</h3>
+   731→                <p className="text-3xl font-extrabold text-primary">
+   732→                  25 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
+   733→                </p>
+   734→                <p className="text-sm text-muted-foreground mt-2">Jusqu&rsquo;à 14 joueurs</p>
+   735→              </motion.div>
+   736→
+   737→              {/* Deposit card */}
+   738→              <motion.div
+   739→                className="bg-white rounded-2xl border-2 border-primary/40 p-6 sm:p-8 text-center relative overflow-hidden"
+   740→                initial={{ opacity: 0, y: 20 }}
+   741→                whileInView={{ opacity: 1, y: 0 }}
+   742→                viewport={{ once: true }}
+   743→                transition={{ duration: 0.5, delay: 0.1 }}
+   744→              >
+   745→                <div className="absolute top-3 right-3">
+   746→                  <Badge className="bg-primary text-primary-foreground text-xs">Populaire</Badge>
+   747→                </div>
+   748→                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+   749→                  <Zap className="w-6 h-6 text-primary" />
+   750→                </div>
+   751→                <h3 className="text-lg font-bold mb-2 text-foreground">Acompte</h3>
+   752→                <p className="text-3xl font-extrabold text-primary">
+   753→                  5 000 <span className="text-base font-normal text-muted-foreground">FCFA</span>
+   754→                </p>
+   755→                <p className="text-sm text-muted-foreground mt-2">Le reste sur place</p>
+   756→              </motion.div>
+   757→            </div>
+   758→          </div>
+   759→        </Section>
+   760→
+   761→        {/* ═══════ 9. TESTIMONIALS ═══════ */}
+   762→        <Section className="py-16 sm:py-24">
+   763→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   764→            <div className="text-center mb-12 sm:mb-14">
+   765→              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+   766→                ★ Ils nous font confiance
+   767→              </h2>
+   768→              <p className="mt-3 text-muted-foreground">Joueurs satisfaits</p>
+   769→            </div>
+   770→
+   771→            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+   772→              {TESTIMONIALS.map((t, i) => (
+   773→                <motion.div
+   774→                  key={t.name}
+   775→                  className="bg-white rounded-2xl border border-border p-6"
+   776→                  initial={{ opacity: 0, y: 20 }}
+   777→                  whileInView={{ opacity: 1, y: 0 }}
+   778→                  viewport={{ once: true, margin: '-40px' }}
+   779→                  transition={{ duration: 0.5, delay: i * 0.12 }}
+   780→                >
+   781→                  {/* Stars */}
+   782→                  <div className="flex gap-0.5 mb-4">
+   783→                    {Array.from({ length: t.rating }).map((_, j) => (
+   784→                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+   785→                    ))}
+   786→                  </div>
+   787→                  <blockquote className="text-sm text-muted-foreground leading-relaxed mb-5">
+   788→                    &ldquo;{t.quote}&rdquo;
+   789→                  </blockquote>
+   790→                  <div>
+   791→                    <p className="text-sm font-bold text-foreground">{t.name}</p>
+   792→                    <p className="text-xs text-muted-foreground mt-0.5">{t.role}</p>
+   793→                  </div>
+   794→                </motion.div>
+   795→              ))}
+   796→            </div>
+   797→          </div>
+   798→        </Section>
+   799→
+   800→        {/* ═══════ 10. CTA SECTION ═══════ */}
+   801→        <Section className="py-16 sm:py-24 bg-secondary/40">
+   802→          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+   803→            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+   804→              Prêt à jouer ?
+   805→            </h2>
+   806→            <p className="text-muted-foreground text-base sm:text-lg mb-8 max-w-md mx-auto">
+   807→              Réservez votre créneau dès maintenant
+   808→            </p>
+   809→            <Button size="lg" className="text-base px-10 py-6 glow-green" onClick={() => navigateTo('booking')}>
+   810→              <Zap className="w-5 h-5 mr-2" />
+   811→              Réserver maintenant
+   812→            </Button>
+   813→          </div>
+   814→        </Section>
+   815→      </main>
+   816→
+   817→      {/* ═══════ 11. FOOTER (sticky, mt-auto) ═══════ */}
+   818→      <footer className="border-t border-border py-8 mt-auto bg-white">
+   819→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+   820→          <div className="flex items-center gap-2.5">
+   821→            <Image src="/logo.png" alt="ZalFoot" width={72} height={72} className="rounded-lg w-[56px] h-[56px] sm:w-[72px] sm:h-[72px]" />
+   822→            <span className="text-sm font-semibold text-foreground">
+   823→              <span className="text-primary">Zal</span>Foot
+   824→            </span>
+   825→          </div>
+   826→          <p className="text-xs text-muted-foreground">
+   827→            © {new Date().getFullYear()} ZalFoot — Réservation de terrains, Sénégal
+   828→          </p>
+   829→          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+   830→            {FOOTER_LINKS.map((link) => (
+   831→              <button
+   832→                key={link.label}
+   833→                onClick={() => navigateTo(link.view)}
+   834→                className="hover:text-foreground transition-colors"
+   835→              >
+   836→                {link.label}
+   837→              </button>
+   838→            ))}
+   839→          </div>
+   840→        </div>
+   841→      </footer>
+   842→    </div>
+   843→  );
+   844→}
+   845→

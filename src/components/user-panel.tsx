@@ -668,49 +668,82 @@ function SettingsTab({ phone, initialName }: { phone: string; initialName: strin
     }
   };
 
+  const initials = name ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
+
   if (loading) {
-    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-card border border-border animate-pulse" />)}</div>;
+    return <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 rounded-2xl bg-card border border-border animate-pulse" />)}</div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Profile Header Card */}
+      <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 border border-primary/20">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold flex-shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold truncate">{name || 'Utilisateur'}</h3>
+            <p className="text-sm text-muted-foreground">{phone}</p>
+            {email && <p className="text-xs text-muted-foreground mt-0.5 truncate">{email}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Information */}
       <div>
-        <h3 className="text-sm font-semibold mb-4">Informations personnelles</h3>
-        <div className="space-y-4">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <User className="w-4 h-4 text-primary" />
+          Informations personnelles
+        </h3>
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
           <div>
-            <Label htmlFor="settings-name">Nom complet</Label>
-            <Input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5" placeholder="Votre nom" />
+            <Label htmlFor="settings-name" className="text-xs text-muted-foreground">Nom complet</Label>
+            <Input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1.5 h-11" placeholder="Votre nom" />
           </div>
           <div>
-            <Label htmlFor="settings-phone">Téléphone</Label>
-            <Input id="settings-phone" value={phone} disabled className="mt-1.5 opacity-60" />
-            <p className="text-xs text-muted-foreground mt-1">Le téléphone ne peut pas être modifié.</p>
+            <Label htmlFor="settings-phone" className="text-xs text-muted-foreground">Téléphone</Label>
+            <Input id="settings-phone" value={phone} disabled className="mt-1.5 h-11 opacity-60 bg-muted/50" />
+            <p className="text-[11px] text-muted-foreground mt-1">Le numéro de téléphone ne peut pas être modifié.</p>
           </div>
           <div>
-            <Label htmlFor="settings-email">Email (optionnel)</Label>
-            <Input id="settings-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" placeholder="votre@email.com" />
+            <Label htmlFor="settings-email" className="text-xs text-muted-foreground">Email (optionnel)</Label>
+            <Input id="settings-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-11" placeholder="votre@email.com" />
           </div>
         </div>
       </div>
 
-      <div className="border-t border-border pt-5">
-        <h3 className="text-sm font-semibold mb-4">Préférences</h3>
-        <div className="flex items-center justify-between bg-card rounded-xl p-4 border border-border">
-          <div className="flex items-center gap-3">
-            <Bell className="w-4 h-4 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Notifications SMS</p>
-              <p className="text-xs text-muted-foreground">Recevoir un rappel avant votre créneau</p>
+      {/* Preferences */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Settings className="w-4 h-4 text-primary" />
+          Préférences
+        </h3>
+        <div className="bg-card rounded-2xl border border-border divide-y divide-border">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Notifications SMS</p>
+                <p className="text-xs text-muted-foreground">Rappel avant votre créneau</p>
+              </div>
             </div>
+            <Switch checked={notifications} onCheckedChange={setNotifications} />
           </div>
-          <Switch checked={notifications} onCheckedChange={setNotifications} />
         </div>
       </div>
 
-      <Button className="w-full" onClick={handleSave} disabled={saving}>
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1.5" /> Enregistrer</>}
+      {/* Save Button */}
+      <Button className="w-full h-11" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1.5" /> Enregistrer les modifications</>}
       </Button>
-      {saved && <p className="text-xs text-emerald-600 text-center">Paramètres sauvegardés.</p>}
+      {saved && (
+        <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-xs text-emerald-600 text-center font-medium">
+          ✓ Paramètres sauvegardés avec succès
+        </motion.p>
+      )}
     </div>
   );
 }

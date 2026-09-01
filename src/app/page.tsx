@@ -390,85 +390,48 @@ export default function HomePage() {
       {/* ═══════ MAIN CONTENT ═══════ */}
       <main className="flex-1 pt-20">
 
-        {/* ═══════ 2. HERO SECTION (white bg, top) ═══════ */}
-        <section className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Badge variant="outline" className="mb-6 px-4 py-1.5 text-sm font-medium border-primary/30 text-primary bg-primary/5">
-                ⚽ Football · Sénégal
-              </Badge>
+        {/* ═══════ 2. HERO SECTION (terrain bg, dark overlay) ═══════ */}
+        <section className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[640px] flex items-center overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src="/hero-bg.png"
+              alt="Terrain de football"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/80" />
+          </div>
+          <div className="relative z-[2] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center w-full">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <Badge variant="outline" className="mb-6 px-4 py-1.5 text-sm font-medium border-white/30 text-white bg-white/10">⚽ Football · Sénégal</Badge>
             </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.15] text-foreground max-w-3xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              Réservez votre terrain de football{' '}
-              <span className="text-primary">en 30 secondes</span>
+            <motion.h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.15] text-white max-w-3xl mx-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
+              Réservez votre terrain de football <span className="text-green-400">en 30 secondes</span>
             </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
+            <motion.p className="mt-5 text-base sm:text-lg text-white/80 max-w-xl mx-auto leading-relaxed" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
               Terrain synthétique, éclairage LED, vestiaires. Aucun compte requis.
             </motion.p>
-
-            {/* 2 CTAs */}
-            <motion.div
-              className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
+            <motion.div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
               <Button size="lg" className="text-base px-8 glow-green" onClick={() => navigateTo('booking')}>
-                <Zap className="w-4 h-4 mr-2" />
-                Réserver maintenant
+                <Zap className="w-4 h-4 mr-2" /> Réserver maintenant
               </Button>
-              <Button size="lg" variant="outline" className="text-base px-8" onClick={() => navigateTo('how-it-works')}>
+              <Button size="lg" variant="outline" className="text-base px-8 border-white/40 text-white hover:bg-white/10 hover:text-white" onClick={() => navigateTo('how-it-works')}>
                 Comment ça marche
               </Button>
             </motion.div>
-
-            {/* Stats row */}
-            <motion.div
-              className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
+            <motion.div className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
               {HERO_STATS.map((stat, i) => (
-                <div key={stat.label} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <stat.icon className="w-4 h-4 text-primary" />
+                <div key={stat.label} className="flex items-center gap-2 text-sm text-white/80">
+                  <stat.icon className="w-4 h-4 text-green-400" />
                   <span>{stat.label}</span>
-                  {i < HERO_STATS.length - 1 && (
-                    <span className="hidden sm:inline text-border mx-1">|</span>
-                  )}
+                  {i < HERO_STATS.length - 1 && <span className="hidden sm:inline text-white/30 mx-1">|</span>}
                 </div>
               ))}
             </motion.div>
-
-            {/* City tag pill */}
-            <motion.div
-              className="mt-6"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <Badge variant="secondary" className="px-4 py-2 text-sm font-normal gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-primary" />
-                Croisement Kaolack - Mbour
+            <motion.div className="mt-6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}>
+              <Badge variant="secondary" className="px-4 py-2 text-sm font-normal gap-1.5 bg-white/10 text-white border border-white/20 hover:bg-white/20">
+                <MapPin className="w-3.5 h-3.5 text-green-400" /> Croisement Kaolack - Mbour
               </Badge>
             </motion.div>
           </div>
