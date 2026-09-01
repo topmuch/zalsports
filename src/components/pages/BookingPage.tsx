@@ -212,6 +212,10 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
   const handleInitiatePayment = useCallback(async () => {
     if (!paymentMethod || !bookingId || !paymentPhone) return;
 
+    // Open Wave payment link FIRST (before async operations, to avoid popup blocker)
+    const waveUrl = 'https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000';
+    window.open(waveUrl, '_blank');
+
     setIsPaying(true);
     try {
       await fetch(`/api/bookings/${bookingId}`, {
@@ -224,8 +228,6 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
           depositPaid: 5000,
         }),
       });
-      // Open Wave payment link
-      window.open('https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000', '_blank');
       setStep('confirm');
     } catch {
       // silent
@@ -627,8 +629,8 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
               <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden">
                 <div className="px-6 py-5">
                   <div className="flex items-center gap-4 mb-5">
-                    <div className="w-20 h-20 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0">
-                      <Image src="/pay-wave.png" alt="Wave" width={96} height={96} className="w-16 h-16 object-contain" />
+                    <div className="w-40 h-40 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                      <Image src="/pay-wave.png" alt="Wave" width={192} height={192} className="w-32 h-32 object-contain" />
                     </div>
                     <div>
                       <p className="text-lg font-bold text-blue-800">Paiement via Wave</p>
