@@ -40,6 +40,10 @@ import {
   Trash2,
   Loader2,
   Save,
+  ShieldCheck,
+  UserPlus,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, parseISO, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -635,6 +639,15 @@ function SettingsTab({ phone, initialName }: { phone: string; initialName: strin
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminRole, setAdminRole] = useState<'admin' | 'superadmin'>('admin');
+  const [showAdminPwd, setShowAdminPwd] = useState(false);
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [adminError, setAdminError] = useState('');
+  const [adminSuccess, setAdminSuccess] = useState(false);
+  const [adminCreatedName, setAdminCreatedName] = useState('');
+  const [adminCreatedRole, setAdminCreatedRole] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -665,6 +678,33 @@ function SettingsTab({ phone, initialName }: { phone: string; initialName: strin
     } catch { /* silent */ } finally {
       setSaving(false);
       setTimeout(() => setSaved(false), 3000);
+    }
+  };
+
+  const handleCreateAdmin = async () => {
+    setAdminError('');
+    setAdminSuccess(false);
+    setCreatingAdmin(true);
+    try {
+      const res = await fetch('/api/user/create-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: adminUsername, password: adminPassword, role: adminRole }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAdminCreatedName(data.username);
+        setAdminCreatedRole(data.role);
+        setAdminSuccess(true);
+        setAdminUsername('');
+        setAdminPassword('');
+      } else {
+        setAdminError(data.error || 'Erreur');
+      }
+    } catch {
+      setAdminError('Erreur de connexion.');
+    } finally {
+      setCreatingAdmin(false);
     }
   };
 
@@ -732,6 +772,65 @@ function SettingsTab({ phone, initialName }: { phone: string; initialName: strin
             </div>
             <Switch checked={notifications} onCheckedChange={setNotifications} />
           </div>
+        </div>
+      </div>
+
+      {/* Admin Access Management */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          Accès administration
+        </h3>
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+          <p className="text-xs text-muted-foreground">Créer un accès au tableau de bord admin.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="admin-username" className="text-xs text-muted-foreground">Nom d'utilisateur</Label>
+              <Input id="admin-username" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} className="mt-1.5 h-11" placeholder="Ex: manager" />
+            </div>
+            <div>
+              <Label htmlFor="admin-role" className="text-xs text-muted-foreground">Rôle</Label>
+              <select
+                id="admin-role"
+                value={adminRole}
+                onChange={(e) => setAdminRole(e.target.value as 'admin' | 'superadmin')}
+                className="mt-1.5 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="admin">Admin</option>
+                <option value="superadmin">Super Admin</option>
+              </select>
+            </div>
+          </div>
+          <div className="relative">
+            <Label htmlFor="admin-password" className="text-xs text-muted-foreground">Mot de passe</Label>
+            <div className="relative mt-1.5">
+              <Input
+                id="admin-password"
+                type={showAdminPwd ? 'text' : 'password'}
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="h-11 pr-10"
+                placeholder="Min. 6 caractères"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPwd(!showAdminPwd)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showAdminPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          {adminError && <p className="text-xs text-destructive">{adminError}</p>}
+          {adminSuccess && <p className="text-xs text-emerald-600">✓ Accès {adminCreatedRole} « {adminCreatedName} » créé avec succès</p>}
+          <Button
+            variant="outline"
+            className="w-full h-11"
+            disabled={creatingAdmin || !adminUsername || !adminPassword}
+            onClick={handleCreateAdmin}
+          >
+            {creatingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-1.5" /> Créer l'accès admin</>}
+          </Button>
         </div>
       </div>
 

@@ -60,3 +60,6 @@ data/
 
 # Docker
 .dockerignoretool-results/
+tool-results/
+agent-ctx/
+*.png

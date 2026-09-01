@@ -224,6 +224,8 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
           depositPaid: 5000,
         }),
       });
+      // Open Wave payment link
+      window.open('https://pay.wave.com/m/M_sn_if40h6RgxkCj/c/sn/?amount=5000', '_blank');
       setStep('confirm');
     } catch {
       // silent
@@ -622,15 +624,15 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
               </div>
 
               {/* Wave Payment Card */}
-              <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
+              <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden">
                 <div className="px-6 py-5">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0">
-                      <Image src="/pay-wave.png" alt="Wave" width={48} height={48} className="w-8 h-8 object-contain" />
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="w-20 h-20 rounded-2xl bg-blue-100 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                      <Image src="/pay-wave.png" alt="Wave" width={96} height={96} className="w-16 h-16 object-contain" />
                     </div>
                     <div>
-                      <p className="text-base font-bold text-emerald-800">Paiement via Wave</p>
-                      <p className="text-xs text-emerald-600">Acompte sécurisé</p>
+                      <p className="text-lg font-bold text-blue-800">Paiement via Wave</p>
+                      <p className="text-xs text-blue-600">Acompte sécurisé</p>
                     </div>
                   </div>
                   <div>
@@ -643,24 +645,24 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
                         placeholder="78 278 49 49"
                         value={paymentPhone}
                         onChange={(e) => { setPaymentPhone(e.target.value); if (!paymentMethod) setPaymentMethod('wave'); }}
-                        className="h-12 text-base pl-11 border-emerald-200 focus-visible:ring-emerald-400"
+                        className="h-12 text-base pl-11 border-blue-200 focus-visible:ring-blue-400"
                       />
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1.5 ml-0.5">Entrez le numéro Wave utilisé pour le paiement</p>
                   </div>
                 </div>
-                <div className="bg-emerald-100/60 border-t border-emerald-200 px-6 py-4 flex items-center justify-between">
+                <div className="bg-blue-100/60 border-t border-blue-200 px-6 py-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-emerald-600 font-medium">Acompte à payer</p>
+                    <p className="text-xs text-blue-600 font-medium">Acompte à payer</p>
                     <p className="text-xs text-muted-foreground">Le solde (20 000 FCFA) sur place</p>
                   </div>
-                  <p className="text-2xl font-extrabold text-emerald-700">5 000 <span className="text-sm font-semibold">FCFA</span></p>
+                  <p className="text-2xl font-extrabold text-blue-700">5 000 <span className="text-sm font-semibold">FCFA</span></p>
                 </div>
               </div>
 
               {/* Trust badge */}
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                 <span>Paiement sécurisé via Wave</span>
               </div>
             </div>
@@ -699,7 +701,7 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
           {step === 'payment' && (
             <div className="space-y-3 max-w-xl mx-auto">
               <Button
-                className="w-full h-13 text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full h-13 text-base py-5 bg-blue-600 hover:bg-blue-700 text-white"
                 size="lg"
                 disabled={!paymentPhone || isPaying}
                 onClick={handleInitiatePayment}
