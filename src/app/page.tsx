@@ -416,7 +416,7 @@ export default function HomePage() {
               <Button size="lg" className="text-base px-8 glow-green" onClick={() => navigateTo('booking')}>
                 <Zap className="w-4 h-4 mr-2" /> Réserver maintenant
               </Button>
-              <Button size="lg" variant="outline" className="text-base px-8 border-white/40 text-white hover:bg-white/10 hover:text-white" onClick={() => navigateTo('how-it-works')}>
+              <Button size="lg" variant="outline" className="text-base px-8 border-white/40 text-white bg-transparent hover:bg-white/10 hover:text-white" onClick={() => navigateTo('how-it-works')}>
                 Comment ça marche
               </Button>
             </motion.div>
