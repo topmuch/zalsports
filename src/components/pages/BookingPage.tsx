@@ -124,7 +124,7 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange_money' | 'cash' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | null>(null);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
@@ -210,8 +210,7 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
   }, [selectedSlot, selectedDate, name, phone]);
 
   const handleInitiatePayment = useCallback(async () => {
-    if (!paymentMethod || !bookingId) return;
-    if (paymentMethod !== 'cash' && !paymentPhone) return;
+    if (!paymentMethod || !bookingId || !paymentPhone) return;
 
     setIsPaying(true);
     try {
@@ -220,9 +219,9 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'confirmed',
-          paymentStatus: paymentMethod === 'cash' ? 'pending' : 'partial',
+          paymentStatus: 'partial',
           paymentMethod,
-          depositPaid: paymentMethod === 'cash' ? 0 : 5000,
+          depositPaid: 5000,
         }),
       });
       setStep('confirm');
@@ -267,20 +266,18 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Méthode de paiement</span>
-                <span className="font-medium">{paymentMethod === 'wave' ? 'Wave' : paymentMethod === 'orange_money' ? 'Orange Money' : 'Espèces'}</span>
+                <span className="font-medium">Wave</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Acompte</span>
-                <span className="font-medium text-green-700">{paymentMethod === 'cash' ? 'Sur place' : '5 000 FCFA'}</span>
+                <span className="font-medium text-green-700">5 000 FCFA</span>
               </div>
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-left">
               <p className="text-sm text-green-700 font-medium">Réservation confirmée</p>
               <p className="text-xs text-green-600/80 mt-1">
-                {paymentMethod === 'cash'
-                  ? 'Présentez-vous avec le montant total (25 000 FCFA) à votre arrivée.'
-                  : `Acompte de 5 000 FCFA via ${paymentMethod === 'wave' ? 'Wave' : 'Orange Money'}. Le solde (20 000 FCFA) se paie sur place.`}
+                Acompte de 5 000 FCFA via Wave. Le solde (20 000 FCFA) se paie sur place.
               </p>
             </div>
 
@@ -297,7 +294,7 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header with step indicator */}
       <header className="border-b border-border bg-white sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-20 flex items-center gap-4">
           <button onClick={onBack} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Retour">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -360,12 +357,12 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
             <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
               {step === 'select' && '⚡ Réservez votre match en 30 secondes'}
               {step === 'info' && 'Vos informations'}
-              {step === 'payment' && '💳 Méthode de paiement'}
+              {step === 'payment' && 'Paiement'}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {step === 'select' && 'Choisissez votre date et votre horaire'}
               {step === 'info' && 'Complétez vos informations pour confirmer votre réservation'}
-              {step === 'payment' && 'Choisissez comment payer l\'acompte'}
+              {step === 'payment' && 'Payez l\'acompte pour confirmer votre réservation'}
             </p>
           </div>
 
@@ -569,131 +566,102 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
 
           {/* ──── PAYMENT STEP ──── */}
           {step === 'payment' && (
-            <div className="max-w-lg space-y-6">
-              {/* Order Summary */}
-              <div className="bg-gray-50 rounded-2xl p-5 space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Récapitulatif</h3>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Date</span>
-                  <span className="font-medium">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+            <div className="max-w-xl mx-auto space-y-6">
+
+              {/* Booking Summary Card */}
+              <div className="relative rounded-2xl border border-border overflow-hidden">
+                <div className="bg-gradient-to-r from-green-800 to-green-700 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                      <CreditCard className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <h3 className="text-base font-bold text-white">Récapitulatif de réservation</h3>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Créneau</span>
-                  <span className="font-medium">{selectedSlot?.label}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Nom</span>
-                  <span className="font-medium">{name}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Prix</span>
-                  <span className="font-bold text-green-700">{VENUE.pricePerHour}</span>
+                <div className="bg-white px-6 py-5 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <CalendarDays className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Date</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Créneau</p>
+                      <p className="text-sm font-semibold text-foreground">{selectedSlot?.label}</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Réservé par</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                    </div>
+                  </div>
+                  <div className="h-px bg-border" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-5 h-5 text-green-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total</p>
+                      <p className="text-sm font-bold text-green-700">{VENUE.pricePerHour}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Payment Method Selection */}
-              <div className="space-y-3">
-                <Label className="text-sm font-bold">Méthode de paiement</Label>
-                <div className="space-y-3">
-                  {/* Wave Card */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (paymentMethod === 'wave') { setPaymentMethod(null); setPaymentPhone(''); }
-                      else { setPaymentMethod('wave'); setPaymentPhone(phone); }
-                    }}
-                    className={`w-full rounded-2xl border-2 p-4 sm:p-5 text-left transition-all flex items-center gap-4 ${
-                      paymentMethod === 'wave'
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-border bg-white hover:border-emerald-300'
-                    }`}
-                  >
-                    <Image src="/pay-wave.png" alt="Wave" width={56} height={56} className="w-14 h-14 object-contain rounded-xl" />
-                    <div className="flex-1">
-                      <p className={`font-bold ${paymentMethod === 'wave' ? 'text-emerald-700' : 'text-foreground'}`}>Wave</p>
-                      <p className={`text-sm ${paymentMethod === 'wave' ? 'text-emerald-600' : 'text-muted-foreground'}`}>Payer avec Wave</p>
+              {/* Wave Payment Card */}
+              <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
+                <div className="px-6 py-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center flex-shrink-0">
+                      <Image src="/pay-wave.png" alt="Wave" width={48} height={48} className="w-8 h-8 object-contain" />
                     </div>
-                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      paymentMethod === 'wave' ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground/30'
-                    }`}>
-                      {paymentMethod === 'wave' && <Check className="w-4 h-4 text-white" />}
+                    <div>
+                      <p className="text-base font-bold text-emerald-800">Paiement via Wave</p>
+                      <p className="text-xs text-emerald-600">Acompte sécurisé</p>
                     </div>
-                  </button>
-                  {paymentMethod === 'wave' && (
-                    <input
-                      type="tel"
-                      placeholder="Numéro Wave"
-                      value={paymentPhone}
-                      onChange={(e) => setPaymentPhone(e.target.value)}
-                      className="w-full rounded-xl border-2 border-emerald-300 bg-emerald-50/50 text-foreground placeholder:text-muted-foreground text-base px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                  )}
-
-                  {/* Orange Money Card */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (paymentMethod === 'orange_money') { setPaymentMethod(null); setPaymentPhone(''); }
-                      else { setPaymentMethod('orange_money'); setPaymentPhone(phone); }
-                    }}
-                    className={`w-full rounded-2xl border-2 p-4 sm:p-5 text-left transition-all flex items-center gap-4 ${
-                      paymentMethod === 'orange_money'
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-border bg-white hover:border-orange-300'
-                    }`}
-                  >
-                    <Image src="/pay-orange-money.jpg" alt="Orange Money" width={56} height={56} className="w-14 h-14 object-contain rounded-xl" />
-                    <div className="flex-1">
-                      <p className={`font-bold ${paymentMethod === 'orange_money' ? 'text-orange-700' : 'text-foreground'}`}>Orange Money</p>
-                      <p className={`text-sm ${paymentMethod === 'orange_money' ? 'text-orange-600' : 'text-muted-foreground'}`}>Payer avec Orange Money</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="payphone" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Numéro Wave</Label>
+                    <div className="relative mt-1.5">
+                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 pointer-events-none" />
+                      <Input
+                        id="payphone"
+                        type="tel"
+                        placeholder="78 278 49 49"
+                        value={paymentPhone}
+                        onChange={(e) => { setPaymentPhone(e.target.value); if (!paymentMethod) setPaymentMethod('wave'); }}
+                        className="h-12 text-base pl-11 border-emerald-200 focus-visible:ring-emerald-400"
+                      />
                     </div>
-                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      paymentMethod === 'orange_money' ? 'border-orange-500 bg-orange-500' : 'border-muted-foreground/30'
-                    }`}>
-                      {paymentMethod === 'orange_money' && <Check className="w-4 h-4 text-white" />}
-                    </div>
-                  </button>
-                  {paymentMethod === 'orange_money' && (
-                    <input
-                      type="tel"
-                      placeholder="Numéro OM"
-                      value={paymentPhone}
-                      onChange={(e) => setPaymentPhone(e.target.value)}
-                      className="w-full rounded-xl border-2 border-orange-300 bg-orange-50/50 text-foreground placeholder:text-muted-foreground text-base px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                    />
-                  )}
-
-                  {/* Espèces Card */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (paymentMethod === 'cash') { setPaymentMethod(null); setPaymentPhone(''); }
-                      else { setPaymentMethod('cash'); setPaymentPhone(''); }
-                    }}
-                    className={`w-full rounded-2xl border-2 p-4 sm:p-5 text-left transition-all flex items-center gap-4 ${
-                      paymentMethod === 'cash'
-                        ? 'border-gray-600 bg-gray-100'
-                        : 'border-border bg-white hover:border-gray-400'
-                    }`}
-                  >
-                    <Image src="/pay-especes.png" alt="Espèces" width={56} height={56} className="w-14 h-14 object-contain rounded-xl" />
-                    <div className="flex-1">
-                      <p className={`font-bold ${paymentMethod === 'cash' ? 'text-gray-800' : 'text-foreground'}`}>Espèces</p>
-                      <p className={`text-sm ${paymentMethod === 'cash' ? 'text-gray-600' : 'text-muted-foreground'}`}>Payer sur place</p>
-                    </div>
-                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      paymentMethod === 'cash' ? 'border-gray-600 bg-gray-600' : 'border-muted-foreground/30'
-                    }`}>
-                      {paymentMethod === 'cash' && <Check className="w-4 h-4 text-white" />}
-                    </div>
-                  </button>
+                    <p className="text-[11px] text-muted-foreground mt-1.5 ml-0.5">Entrez le numéro Wave utilisé pour le paiement</p>
+                  </div>
+                </div>
+                <div className="bg-emerald-100/60 border-t border-emerald-200 px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-emerald-600 font-medium">Acompte à payer</p>
+                    <p className="text-xs text-muted-foreground">Le solde (20 000 FCFA) sur place</p>
+                  </div>
+                  <p className="text-2xl font-extrabold text-emerald-700">5 000 <span className="text-sm font-semibold">FCFA</span></p>
                 </div>
               </div>
 
-              {/* Deposit Amount */}
-              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-5 text-center">
-                <p className="text-sm text-muted-foreground">Acompte</p>
-                <p className="text-3xl font-extrabold text-green-700">5 000 FCFA</p>
+              {/* Trust badge */}
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                <span>Paiement sécurisé via Wave</span>
               </div>
             </div>
           )}
@@ -729,11 +697,11 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
             </div>
           )}
           {step === 'payment' && (
-            <div className="space-y-3 max-w-lg">
+            <div className="space-y-3 max-w-xl mx-auto">
               <Button
                 className="w-full h-13 text-base py-5 bg-emerald-600 hover:bg-emerald-700 text-white"
                 size="lg"
-                disabled={!paymentMethod || (paymentMethod !== 'cash' && !paymentPhone) || isPaying}
+                disabled={!paymentPhone || isPaying}
                 onClick={handleInitiatePayment}
               >
                 {isPaying ? (
@@ -741,14 +709,12 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Traitement...
                   </span>
-                ) : paymentMethod === 'cash' ? (
-                  'Confirmer la réservation'
                 ) : (
-                  'Payer 5 000 FCFA'
+                  <><Zap className="w-4 h-4 mr-2" /> Payer 5 000 FCFA</>
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                {paymentMethod === 'cash' ? 'Paiement intégral sur place (25 000 FCFA)' : 'Le solde (20 000 FCFA) se paie sur place'}
+                Le solde (20 000 FCFA) se paie sur place
               </p>
               <Button variant="outline" className="w-full" onClick={() => setStep('info')}>Retour</Button>
             </div>
