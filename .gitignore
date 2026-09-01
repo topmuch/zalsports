@@ -59,4 +59,4 @@ server.log
 data/
 
 # Docker
-.dockerignore
+.dockerignoretool-results/
