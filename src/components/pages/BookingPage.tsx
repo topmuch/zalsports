@@ -16,6 +16,7 @@ import {
   Check,
   X,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,6 +30,7 @@ interface TimeSlot {
   time: string;
   label: string;
   available: boolean;
+  past: boolean;
   price: number;
 }
 
@@ -44,16 +46,30 @@ const STEP_CONFIG: { key: Step; label: string; icon: typeof CalendarDays }[] = [
   { key: 'payment', label: 'Paiement', icon: CreditCard },
 ];
 
-function generateTimeSlots(availableHours?: Set<string>): TimeSlot[] {
+function isToday(date: Date): boolean {
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+}
+
+function generateTimeSlots(selectedDate?: Date, availableHours?: Set<string>): TimeSlot[] {
   const slots: TimeSlot[] = [];
+  const now = new Date();
+  const currentHour = now.getHours();
+  const today = isToday(selectedDate || new Date());
+
   for (let h = 8; h <= 23; h++) {
     const timeStr = `${h.toString().padStart(2, '0')}:00`;
-    const available = availableHours ? !availableHours.has(timeStr) : true;
+    const booked = availableHours ? availableHours.has(timeStr) : false;
+    const past = today && h <= currentHour;
+    const available = !booked && !past;
     slots.push({
       id: `slot-${h}`,
       time: timeStr,
       label: `${timeStr} – ${(h + 1).toString().padStart(2, '0')}:00`,
       available,
+      past,
       price: 25000,
     });
   }
@@ -65,22 +81,24 @@ function generateTimeSlots(availableHours?: Set<string>): TimeSlot[] {
    ═══════════════════════════════════════════ */
 
 function SlotGridButton({ slot, selected, onClick }: { slot: TimeSlot; selected: boolean; onClick: () => void }) {
+  const pastStyle = 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed';
+  const bookedStyle = 'bg-red-50 border-2 border-red-300 text-red-400 cursor-not-allowed line-through';
+  const selectedStyle = 'bg-green-800 text-white border-2 border-green-800 shadow-lg shadow-green-800/30 scale-105';
+  const availableStyle = 'bg-green-50 border-2 border-green-700 text-green-900 hover:bg-green-100 hover:border-green-800';
+
+  const style = slot.past ? pastStyle : !slot.available ? bookedStyle : selected ? selectedStyle : availableStyle;
+
   return (
     <button
       disabled={!slot.available}
       onClick={onClick}
-      className={
-        `relative rounded-xl p-3 text-sm font-bold transition-all duration-200 ${
-          !slot.available
-            ? 'bg-red-50 border-2 border-red-300 text-red-400 cursor-not-allowed line-through'
-            : selected
-              ? 'bg-green-800 text-white border-2 border-green-800 shadow-lg shadow-green-800/30 scale-105'
-              : 'bg-green-50 border-2 border-green-700 text-green-900 hover:bg-green-100 hover:border-green-800'
-        }`
-      }
+      className={`relative rounded-xl p-3 text-sm font-bold transition-all duration-200 ${style}`}
     >
       {slot.time}
-      {!slot.available && (
+      {slot.past && (
+        <span className="absolute top-1.5 right-1.5 text-[9px] text-gray-400 font-medium">Passé</span>
+      )}
+      {!slot.available && !slot.past && (
         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400" />
       )}
       {selected && (
@@ -125,12 +143,12 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
             .filter((s: { time: string; available: boolean }) => !s.available)
             .map((s: { time: string; available: boolean }) => s.time)
         );
-        setSlots(generateTimeSlots(bookedSet));
+        setSlots(generateTimeSlots(date, bookedSet));
       } else {
-        setSlots(generateTimeSlots());
+        setSlots(generateTimeSlots(date));
       }
     } catch {
-      setSlots(generateTimeSlots());
+      setSlots(generateTimeSlots(date));
     } finally {
       setLoadingSlots(false);
     }
@@ -404,6 +422,12 @@ export default function BookingPage({ onBack }: { onBack: () => void }) {
                     <X className="w-4 h-4 text-white" />
                   </span>
                   <span className="text-base font-bold text-red-700">Complet</span>
+                </div>
+                <div className="flex items-center gap-2 px-5 py-3 bg-gray-100 border-2 border-gray-200 rounded-xl">
+                  <span className="w-8 h-8 rounded-lg bg-gray-300 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                  </span>
+                  <span className="text-base font-bold text-gray-500">Passé</span>
                 </div>
                 <div className="flex items-center gap-2 px-5 py-3 bg-green-800 border-2 border-green-800 rounded-xl">
                   <span className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
